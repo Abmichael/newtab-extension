@@ -9,7 +9,7 @@ class StorageManager {
         backgroundColor: '#667eea',
         textColor: '#ffffff',
         showClock: true,
-        clockFormat: '24h'
+  clockFormat: '12h'
       },
       version: '1.0'
     };
@@ -30,10 +30,15 @@ class StorageManager {
       // Sanitize input to prevent potential issues
       const sanitizedData = this.sanitizeInput(data);
       
-      // Check storage quota before saving
+      // Check storage quota before saving (best-effort)
       await this.checkStorageQuota();
 
-      await chrome.storage.local.set({ [this.storageKey]: sanitizedData });
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.set) {
+        await chrome.storage.local.set({ [this.storageKey]: sanitizedData });
+      } else {
+        // Fallback to localStorage when running outside Chrome extension (dev in browser)
+        localStorage.setItem(this.storageKey, JSON.stringify(sanitizedData));
+      }
       console.log('Data saved successfully');
       return true;
     } catch (error) {
@@ -54,8 +59,14 @@ class StorageManager {
    */
   async loadData() {
     try {
-      const result = await chrome.storage.local.get([this.storageKey]);
-      const storedData = result[this.storageKey];
+      let storedData = null;
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.get) {
+        const result = await chrome.storage.local.get([this.storageKey]);
+        storedData = result[this.storageKey];
+      } else {
+        const raw = localStorage.getItem(this.storageKey);
+        storedData = raw ? JSON.parse(raw) : null;
+      }
 
       if (!storedData) {
         console.log('No stored data found, using defaults');
@@ -213,7 +224,7 @@ class StorageManager {
    */
   async checkStorageQuota() {
     try {
-      if (chrome.storage.local.getBytesInUse) {
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.getBytesInUse) {
         const bytesInUse = await chrome.storage.local.getBytesInUse();
         const quotaBytes = chrome.storage.local.QUOTA_BYTES || 5242880; // 5MB default
         
@@ -221,6 +232,15 @@ class StorageManager {
         
         if (usagePercent > 80) {
           console.warn(`Storage usage high: ${usagePercent.toFixed(1)}%`);
+        }
+      } else {
+        // localStorage rough estimate
+        const raw = localStorage.getItem(this.storageKey) || '';
+        const bytesInUse = new Blob([raw]).size;
+        const quotaBytes = 5 * 1024 * 1024; // assume 5MB
+        const usagePercent = (bytesInUse / quotaBytes) * 100;
+        if (usagePercent > 80) {
+          console.warn(`Storage usage (localStorage) high: ${usagePercent.toFixed(1)}%`);
         }
       }
     } catch (error) {
@@ -241,7 +261,11 @@ class StorageManager {
    */
   async clearData() {
     try {
-      await chrome.storage.local.remove([this.storageKey]);
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.remove) {
+        await chrome.storage.local.remove([this.storageKey]);
+      } else {
+        localStorage.removeItem(this.storageKey);
+      }
       console.log('Data cleared successfully');
       return true;
     } catch (error) {
@@ -255,8 +279,15 @@ class StorageManager {
    */
   async getStorageStats() {
     try {
-      const bytesInUse = await chrome.storage.local.getBytesInUse();
-      const quotaBytes = chrome.storage.local.QUOTA_BYTES || 5242880;
+      let bytesInUse = 0;
+      let quotaBytes = 5 * 1024 * 1024;
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.getBytesInUse) {
+        bytesInUse = await chrome.storage.local.getBytesInUse();
+        quotaBytes = chrome.storage.local.QUOTA_BYTES || 5242880;
+      } else {
+        const raw = localStorage.getItem(this.storageKey) || '';
+        bytesInUse = new Blob([raw]).size;
+      }
       
       return {
         bytesInUse,

@@ -2,19 +2,28 @@
 class NeoTabApp {
   constructor() {
     this.storageManager = new StorageManager();
-  this.folderSystem = new FolderSystem(this.storageManager);
-  this.data = null;
+    this.folderSystem = new FolderSystem(this.storageManager);
+    this.data = null;
+    this.ui = null;
     this.init();
   }
 
   async init() {
     console.log("NeoTab initialized");
-    
-  // Initialize storage and load data
-  await this.initializeData();
-    
+
+    // Initialize storage and load data
+    await this.initializeData();
+
     this.updateClock();
     this.setupEventListeners();
+
+    // Initialize UI after data is ready
+    const grid = document.getElementById("folder-grid");
+    const overlay = document.getElementById("folder-overlay");
+    if (grid && overlay) {
+      this.ui = new UIManager(grid, overlay, this.folderSystem);
+      this.ui.renderFolders(this.data.folders);
+    }
 
     // Update clock every second
     setInterval(() => this.updateClock(), 1000);
@@ -26,7 +35,7 @@ class NeoTabApp {
       await this.folderSystem.initialize();
       this.data = this.folderSystem.data;
       console.log("Data loaded:", this.data);
-      
+
       // Apply settings if available
       if (this.data.settings) {
         this.applySettings(this.data.settings);
@@ -43,16 +52,19 @@ class NeoTabApp {
     if (settings.backgroundColor) {
       document.body.style.background = settings.backgroundColor;
     }
-    
+
     // Apply text color
     if (settings.textColor) {
-      document.documentElement.style.setProperty('--text-color', settings.textColor);
+      document.documentElement.style.setProperty(
+        "--text-color",
+        settings.textColor
+      );
     }
-    
+
     // Show/hide clock
     const clockElement = document.getElementById("clock");
-    if (clockElement && typeof settings.showClock === 'boolean') {
-      clockElement.style.display = settings.showClock ? 'block' : 'none';
+    if (clockElement && typeof settings.showClock === "boolean") {
+      clockElement.style.display = settings.showClock ? "block" : "none";
     }
   }
 
@@ -60,12 +72,12 @@ class NeoTabApp {
     const clockElement = document.getElementById("clock");
     if (clockElement) {
       const now = new Date();
-      const timeString = now.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-        hour12: false,
-      });
-      clockElement.textContent = timeString;
+  const hour12 = this?.data?.settings?.clockFormat === '12h' || true;
+  const opts = { hour: '2-digit', minute: '2-digit', hour12 };
+  let timeString = now.toLocaleTimeString([], opts);
+  // Ensure lowercase am/pm if present
+  timeString = timeString.replace(/AM|PM/, (m) => m.toLowerCase());
+  clockElement.textContent = timeString;
     }
   }
 
@@ -103,10 +115,14 @@ class NeoTabApp {
     // Create a new folder via FolderSystem
     try {
       console.log("Adding new folder...");
-      const folder = await this.folderSystem.createFolder("New Folder", { color: "#4285f4" });
+      const folder = await this.folderSystem.createFolder("New Folder", {
+        color: "#4285f4",
+      });
       console.log("Folder added:", folder);
       // Keep local reference in sync
       this.data = this.folderSystem.data;
+      // Re-render UI
+      this.ui?.renderFolders(this.data.folders);
     } catch (e) {
       console.error("Failed to add folder", e);
     }
@@ -116,7 +132,7 @@ class NeoTabApp {
     try {
       this.data.settings = { ...this.data.settings, ...newSettings };
       const success = await this.storageManager.saveData(this.data);
-      
+
       if (success) {
         this.applySettings(this.data.settings);
         console.log("Settings saved successfully");
@@ -132,14 +148,16 @@ class NeoTabApp {
   }
 }
 
-// Initialize the app when DOM is loaded
-document.addEventListener("DOMContentLoaded", () => {
-  new NeoTabApp();
-});
-
-// Make sure the app works even if DOMContentLoaded has already fired
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => new NeoTabApp());
-} else {
-  new NeoTabApp();
-}
+// Initialize the app once
+(function initOnce() {
+  const start = () => {
+    if (!window.__neotabApp) {
+      window.__neotabApp = new NeoTabApp();
+    }
+  };
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start, { once: true });
+  } else {
+    start();
+  }
+})();
