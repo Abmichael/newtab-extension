@@ -1,0 +1,121 @@
+/* NeoTab - Android-style folder components */
+
+.folder-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  user-select: none;
+}
+
+.folder-button {
+  width: var(--folder-size);
+  height: var(--folder-size);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.12);
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 8px;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.folder-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.2);
+}
+
+.folder-button:active {
+  transform: translateY(0);
+}
+
+.folder-preview-icon {
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.folder-preview-icon img {
+  width: 20px;
+  height: 20px;
+}
+
+.folder-title {
+  margin-top: 10px;
+  max-width: calc(var(--folder-size) + 8px);
+  font-size: 14px;
+  line-height: 1.2;
+  text-align: center;
+  color: var(--text-color);
+  opacity: 0.95;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Overlay (expanded folder) */
+.folder-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none; /* toggled by JS */
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.folder-overlay.open {
+  display: flex;
+  opacity: 1;
+}
+
+.folder-modal {
+  width: min(90vw, 900px);
+  max-height: 80vh;
+  background: rgba(20, 20, 20, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  overflow: auto;
+}
+
+/* Inside modal: grid of site tiles */
+.site-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 16px;
+}
+
+.site-tile {
+  height: 100px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-color);
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.site-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+}
+
+.site-tile:active {
+  transform: translateY(0);
+}
