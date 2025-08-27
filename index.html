@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="NeoTab - Custom new tab page with Android-style folders"
+    />
+    <title>NeoTab</title>
+    <link rel="stylesheet" href="src/css/main.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="header">
+        <h1 class="logo">NeoTab</h1>
+        <div class="clock" id="clock"></div>
+      </header>
+
+      <main class="main-content">
+        <div class="folder-grid" id="folder-grid">
+          <!-- Folders will be dynamically generated here -->
+        </div>
+      </main>
+
+      <div class="folder-overlay" id="folder-overlay">
+        <!-- Folder content overlay will be generated here -->
+      </div>
+
+      <div class="add-button" id="add-button">
+        <span>+</span>
+      </div>
+    </div>
+
+  <script src="src/js/storage.js"></script>
+  <script src="src/js/folders.js"></script>
+    <script src="src/js/app.js"></script>
+  </body>
+</html>
