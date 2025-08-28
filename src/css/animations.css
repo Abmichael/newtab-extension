@@ -28,3 +28,77 @@
   from { transform: scale(0.98); opacity: 0.8; }
   to { transform: scale(1); opacity: 1; }
 }
+
+/* Drag and drop states */
+.folder-item.dragging {
+  transform: rotate(5deg) scale(1.05);
+  z-index: 1000;
+  transition: transform 0.2s ease;
+}
+
+.drop-indicator {
+  width: 4px;
+  height: var(--folder-size, 80px);
+  background: linear-gradient(to bottom, #4285f4, #34a853);
+  border-radius: 2px;
+  margin: 0 8px;
+  opacity: 0;
+  animation: dropIndicatorShow 0.2s ease forwards;
+  box-shadow: 0 0 8px rgba(66, 133, 244, 0.6);
+}
+
+@keyframes dropIndicatorShow {
+  to { opacity: 1; }
+}
+
+/* Context menu animation */
+.context-menu {
+  animation: contextMenuShow 0.15s ease forwards;
+  transform-origin: top left;
+}
+
+@keyframes contextMenuShow {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Dialog animations */
+.dialog-overlay {
+  animation: dialogOverlayShow 0.2s ease forwards;
+}
+
+.dialog {
+  animation: dialogShow 0.2s ease forwards;
+  transform-origin: center;
+}
+
+@keyframes dialogOverlayShow {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes dialogShow {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Hover enhancements for interactivity */
+.folder-item:not(.dragging):hover .folder-button {
+  transform: translateY(-2px) scale(1.02);
+}
+
+.folder-item:focus .folder-button {
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.12), 0 0 0 2px rgba(66, 133, 244, 0.4);
+}

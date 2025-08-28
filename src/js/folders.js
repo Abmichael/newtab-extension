@@ -119,6 +119,20 @@ class FolderSystem {
     return this.folders;
   }
 
+  /** Reorder a folder by ID to a new position */
+  async reorderFolder(folderId, newIndex) {
+    const currentIndex = this.folders.findIndex(f => f.id === folderId);
+    if (currentIndex === -1) throw new Error('Folder not found');
+    
+    const clampedIndex = Math.max(0, Math.min(newIndex, this.folders.length - 1));
+    return await this.reorderFolders(currentIndex, clampedIndex);
+  }
+
+  /** Get all folders in order */
+  getAllFolders() {
+    return this.folders;
+  }
+
   // =============== Site Management ==============
 
   /** Add a site to a folder */
@@ -142,6 +156,11 @@ class FolderSystem {
     folder.sites.push(site);
     await this.save();
     return site;
+  }
+
+  /** Alias for addSite to match UI calls */
+  async addSiteToFolder(folderId, siteData) {
+    return await this.addSite(folderId, siteData);
   }
 
   /** Update a site properties */

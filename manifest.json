@@ -2,8 +2,9 @@
   "manifest_version": 3,
   "name": "NeoTab",
   "version": "1.0.0",
-  "description": "A custom new tab page with Android-style folder organization for bookmarks",
+  "description": "Transform your new tab into an organized workspace with Android-style folders for your favorite sites and bookmarks.",
   "author": "NeoTab Team",
+  "homepage_url": "https://github.com/neotab/extension",
 
   "chrome_url_overrides": {
     "newtab": "index.html"
@@ -12,7 +13,7 @@
   "permissions": ["storage"],
 
   "content_security_policy": {
-    "extension_pages": "default-src 'self'"
+    "extension_pages": "default-src 'self'; style-src 'self' 'unsafe-inline'"
   },
 
   "icons": {
@@ -29,6 +30,13 @@
       "48": "icons/icon-48.png",
       "128": "icons/icon-128.png"
     },
-    "default_title": "NeoTab"
-  }
+    "default_title": "Open NeoTab",
+    "default_popup": ""
+  },
+
+  "background": {
+    "service_worker": "background.js"
+  },
+
+  "minimum_chrome_version": "88"
 }

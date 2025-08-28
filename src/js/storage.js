@@ -6,10 +6,19 @@ class StorageManager {
       folders: [],
       settings: {
         gridSize: 4,
-        backgroundColor: '#667eea',
-        textColor: '#ffffff',
-        showClock: true,
-  clockFormat: '12h'
+        theme: 'dark',
+        backgroundColor: '#1a202c',
+        textColor: '#e2e8f0',
+        primaryColor: '#63b3ed',
+        backgroundGradient: 'linear-gradient(135deg, #2d3748 0%, #4a5568 100%)',
+        showClock: false,
+        clockFormat: '12h',
+        clockPosition: 'bottom-right',
+        customTheme: false,
+        accessibility: {
+          highContrast: false,
+          reducedMotion: false
+        }
       },
       version: '1.0'
     };
@@ -118,8 +127,19 @@ class StorageManager {
       if (typeof settings.gridSize !== 'number' ||
           typeof settings.backgroundColor !== 'string' ||
           typeof settings.textColor !== 'string' ||
-          typeof settings.showClock !== 'boolean') {
+          typeof settings.showClock !== 'boolean' ||
+          typeof settings.clockFormat !== 'string' ||
+          typeof settings.theme !== 'string') {
         return false;
+      }
+
+      // Validate accessibility settings if present
+      if (settings.accessibility) {
+        if (typeof settings.accessibility !== 'object' ||
+            (settings.accessibility.highContrast !== undefined && typeof settings.accessibility.highContrast !== 'boolean') ||
+            (settings.accessibility.reducedMotion !== undefined && typeof settings.accessibility.reducedMotion !== 'boolean')) {
+          return false;
+        }
       }
 
       // Validate folders structure
@@ -334,6 +354,51 @@ class StorageManager {
         return 'https://' + url;
       }
       return url;
+    }
+  }
+
+  /**
+   * Save settings specifically
+   * @param {Object} settings - Settings object to save
+   * @returns {Promise<boolean>} - Success status
+   */
+  async saveSettings(settings) {
+    try {
+      const data = await this.loadData();
+      data.settings = { ...data.settings, ...settings };
+      return await this.saveData(data);
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Load only settings
+   * @returns {Promise<Object>} - Settings object
+   */
+  async loadSettings() {
+    try {
+      const data = await this.loadData();
+      return data.settings || this.defaultData.settings;
+    } catch (error) {
+      console.error('Error loading settings:', error);
+      return this.defaultData.settings;
+    }
+  }
+
+  /**
+   * Reset settings to defaults
+   * @returns {Promise<boolean>} - Success status
+   */
+  async resetSettings() {
+    try {
+      const data = await this.loadData();
+      data.settings = { ...this.defaultData.settings };
+      return await this.saveData(data);
+    } catch (error) {
+      console.error('Error resetting settings:', error);
+      return false;
     }
   }
 }

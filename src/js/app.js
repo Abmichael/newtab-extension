@@ -3,16 +3,23 @@ class NeoTabApp {
   constructor() {
     this.storageManager = new StorageManager();
     this.folderSystem = new FolderSystem(this.storageManager);
+    this.settingsManager = new SettingsManager(this.storageManager);
     this.data = null;
     this.ui = null;
     this.init();
   }
 
   async init() {
-    console.log("NeoTab initialized");
+    // Initialize performance monitoring
+    if (typeof PerformanceMonitor !== 'undefined') {
+      this.performanceMonitor = new PerformanceMonitor();
+    }
 
     // Initialize storage and load data
     await this.initializeData();
+
+    // Initialize settings manager
+    await this.settingsManager.init();
 
     this.updateClock();
     this.setupEventListeners();
@@ -25,7 +32,7 @@ class NeoTabApp {
       this.ui.renderFolders(this.data.folders);
     }
 
-    // Update clock every second
+    // Update clock every second (the settings manager also has its own clock)
     setInterval(() => this.updateClock(), 1000);
   }
 
@@ -34,37 +41,16 @@ class NeoTabApp {
       // Initialize folder system (loads data via storage manager)
       await this.folderSystem.initialize();
       this.data = this.folderSystem.data;
-      console.log("Data loaded:", this.data);
-
-      // Apply settings if available
-      if (this.data.settings) {
-        this.applySettings(this.data.settings);
-      }
     } catch (error) {
-      console.error("Error initializing data:", error);
+      if (window.errorHandler) {
+        window.errorHandler.handleError({
+          type: 'initialization',
+          message: error.message,
+          stack: error.stack
+        });
+      }
       // Use default data if loading fails
       this.data = this.storageManager.defaultData;
-    }
-  }
-
-  applySettings(settings) {
-    // Apply background color
-    if (settings.backgroundColor) {
-      document.body.style.background = settings.backgroundColor;
-    }
-
-    // Apply text color
-    if (settings.textColor) {
-      document.documentElement.style.setProperty(
-        "--text-color",
-        settings.textColor
-      );
-    }
-
-    // Show/hide clock
-    const clockElement = document.getElementById("clock");
-    if (clockElement && typeof settings.showClock === "boolean") {
-      clockElement.style.display = settings.showClock ? "block" : "none";
     }
   }
 
@@ -72,12 +58,12 @@ class NeoTabApp {
     const clockElement = document.getElementById("clock");
     if (clockElement) {
       const now = new Date();
-  const hour12 = this?.data?.settings?.clockFormat === '12h' || true;
-  const opts = { hour: '2-digit', minute: '2-digit', hour12 };
-  let timeString = now.toLocaleTimeString([], opts);
-  // Ensure lowercase am/pm if present
-  timeString = timeString.replace(/AM|PM/, (m) => m.toLowerCase());
-  clockElement.textContent = timeString;
+      const hour12 = this?.data?.settings?.clockFormat === '12h' || true;
+      const opts = { hour: '2-digit', minute: '2-digit', hour12 };
+      let timeString = now.toLocaleTimeString([], opts);
+      // Ensure lowercase am/pm if present
+      timeString = timeString.replace(/AM|PM/, (m) => m.toLowerCase());
+      clockElement.textContent = timeString;
     }
   }
 
@@ -86,8 +72,15 @@ class NeoTabApp {
     const addButton = document.getElementById("add-button");
     if (addButton) {
       addButton.addEventListener("click", () => {
-        console.log("Add button clicked");
         this.handleAddFolder();
+      });
+    }
+
+    // Settings button click handler
+    const settingsButton = document.getElementById("settings-button");
+    if (settingsButton) {
+      settingsButton.addEventListener("click", () => {
+        this.ui.showSettingsModal(this.settingsManager);
       });
     }
 
@@ -95,7 +88,6 @@ class NeoTabApp {
     const folderGrid = document.getElementById("folder-grid");
     if (folderGrid) {
       folderGrid.addEventListener("click", (event) => {
-        console.log("Folder grid clicked", event.target);
         // Folder interaction will be implemented in later tasks
       });
     }
@@ -112,19 +104,28 @@ class NeoTabApp {
   }
 
   async handleAddFolder() {
-    // Create a new folder via FolderSystem
-    try {
-      console.log("Adding new folder...");
-      const folder = await this.folderSystem.createFolder("New Folder", {
-        color: "#4285f4",
-      });
-      console.log("Folder added:", folder);
-      // Keep local reference in sync
-      this.data = this.folderSystem.data;
-      // Re-render UI
-      this.ui?.renderFolders(this.data.folders);
-    } catch (e) {
-      console.error("Failed to add folder", e);
+    // Use the UI dialog system for adding folders
+    if (this.ui) {
+      this.ui.showAddFolderDialog();
+    } else {
+      // Fallback for when UI isn't ready
+      try {
+        const folder = await this.folderSystem.createFolder("New Folder", {
+          color: "#4285f4",
+        });
+        // Keep local reference in sync
+        this.data = this.folderSystem.data;
+        // Re-render UI if available
+        this.ui?.renderFolders(this.data.folders);
+      } catch (e) {
+        if (window.errorHandler) {
+          window.errorHandler.handleError({
+            type: 'folder_creation',
+            message: e.message,
+            stack: e.stack
+          });
+        }
+      }
     }
   }
 
@@ -135,14 +136,24 @@ class NeoTabApp {
 
       if (success) {
         this.applySettings(this.data.settings);
-        console.log("Settings saved successfully");
         return true;
       } else {
-        console.error("Failed to save settings");
+        if (window.errorHandler) {
+          window.errorHandler.handleError({
+            type: 'settings_save',
+            message: 'Failed to save settings to storage'
+          });
+        }
         return false;
       }
     } catch (error) {
-      console.error("Error saving settings:", error);
+      if (window.errorHandler) {
+        window.errorHandler.handleError({
+          type: 'settings_save',
+          message: error.message,
+          stack: error.stack
+        });
+      }
       return false;
     }
   }
