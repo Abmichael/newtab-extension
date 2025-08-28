@@ -43,11 +43,27 @@
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  transition: background 0.18s ease, box-shadow 0.18s ease;
 }
 
 .folder-preview-icon img {
   width: 20px;
   height: 20px;
+}
+
+/* Theme-colored hover accent on folder icons */
+.folder-button:hover .folder-preview-icon {
+  /* Fallback ring using primary color */
+  box-shadow: inset 0 0 0 2px var(--primary-color);
+  /* Prefer themed tint and softer ring when supported */
+  background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary-color) 40%, transparent);
+}
+
+/* Theme-colored hover accent on folder icons */
+.folder-button:hover .folder-preview-icon {
+  background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary-color) 40%, transparent);
 }
 
 .folder-title {
@@ -61,17 +77,37 @@
   text-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
+/* Theme: Light - adjust folder visuals for contrast on light background */
+body.theme-light .folder-button {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+body.theme-light .folder-preview-icon {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+body.theme-light .folder-title {
+  color: #1f2937;
+  text-shadow: none;
+}
+
 /* Overlay (expanded folder) */
 .folder-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: none; /* toggled by JS */
   align-items: center;
   justify-content: center;
   z-index: 1000;
   opacity: 0;
   transition: opacity 0.2s ease;
+}
+
+body.theme-light .folder-overlay {
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .folder-overlay.open {
@@ -82,11 +118,15 @@
 .folder-modal {
   width: min(90vw, 900px);
   max-height: 80vh;
-  background: rgba(15, 15, 20, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  /* Light theme surface */
+  background: #ffffff;
+  /* locally override text color for light surface */
+  --text-color: #2b2b2b;
+  color: var(--text-color);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
-  backdrop-filter: blur(10px);
+  box-shadow: 0 20px 50px rgba(0,0,0,0.18);
+  backdrop-filter: blur(6px);
   padding: 20px;
   overflow: auto;
 }
@@ -101,8 +141,8 @@
 .site-tile {
   height: 100px;
   border-radius: 12px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -113,7 +153,8 @@
 
 .site-tile:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .site-tile:active {
@@ -123,11 +164,14 @@
 /* Context Menu */
 .context-menu {
   position: fixed;
-  background: rgba(20, 20, 25, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #ffffff;
+  /* locally override text color for light surface */
+  --text-color: #2b2b2b;
+  color: var(--text-color);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(6px);
   z-index: 2000;
   min-width: 160px;
   overflow: hidden;
@@ -142,15 +186,29 @@
   transition: background 0.15s ease;
   display: flex;
   align-items: center;
+  position: relative;
 }
 
 .context-item:hover {
-  background: rgba(255, 255, 255, 0.1);
+  /* Fallback neutral hover */
+  background: rgba(0, 0, 0, 0.06);
+  /* Prefer theme tint when supported */
+  background: color-mix(in srgb, var(--primary-color) 12%, transparent);
+}
+
+.context-item:hover::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary-color);
 }
 
 .context-divider {
   height: 1px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.08);
   margin: 4px 0;
 }
 
@@ -158,7 +216,7 @@
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -166,11 +224,14 @@
 }
 
 .dialog {
-  background: rgba(15, 15, 20, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: #ffffff;
+  /* locally override text color for light surface */
+  --text-color: #2b2b2b;
+  color: var(--text-color);
+  border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 12px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(6px);
   width: min(90vw, 400px);
   max-height: 80vh;
   overflow: hidden;
@@ -206,9 +267,9 @@
 .dialog-field input {
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
+  background: #ffffff;
   color: var(--text-color);
   font-size: 14px;
   transition: border-color 0.15s ease, background 0.15s ease;
@@ -217,7 +278,8 @@
 .dialog-field input:focus {
   outline: none;
   border-color: #4285f4;
-  background: rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.18);
 }
 
 .dialog-field input[type="color"] {
@@ -236,9 +298,9 @@
 
 .dialog-btn {
   padding: 10px 20px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 6px;
-  background: transparent;
+  background: #ffffff;
   color: var(--text-color);
   font-size: 14px;
   cursor: pointer;
@@ -246,7 +308,7 @@
 }
 
 .dialog-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.06);
 }
 
 .dialog-btn.primary {

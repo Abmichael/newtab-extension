@@ -28,6 +28,34 @@ body {
   overflow-x: hidden;
 }
 
+/* Theme-specific overrides */
+body.theme-light {
+  /* Ensure legible dark text on light background */
+  color: #1f2937;
+}
+
+body.theme-light .header {
+  background: rgba(255, 255, 255, 0.6);
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+}
+
+body.theme-light .settings-btn {
+  background: rgba(0, 0, 0, 0.06);
+  border-color: rgba(0, 0, 0, 0.12);
+  color: #1f2937;
+}
+
+body.theme-light .settings-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+/* Clock widget on light theme */
+body.theme-light .clock-widget {
+  background: rgba(0, 0, 0, 0.04);
+  border-color: rgba(0, 0, 0, 0.1);
+  color: #1f2937;
+}
+
 #app {
   min-height: 100vh;
   display: flex;
@@ -48,7 +76,6 @@ body {
   font-size: 24px;
   font-weight: 600;
   color: var(--text-color);
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
 
 .header-actions {
@@ -252,19 +279,23 @@ body {
 }
 
 .settings-content {
-  background: var(--bg-color, #1a202c);
+  /* Light theme surface for settings modal */
+  background: #ffffff;
+  /* Locally override text color for light surface */
+  --text-color: #2b2b2b;
+  color: var(--text-color);
   border-radius: 16px;
   max-width: 600px;
   width: 100%;
   max-height: 80vh;
   overflow-y: auto;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
 }
 
 .settings-header {
   padding: 24px 24px 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .settings-title {
@@ -296,7 +327,7 @@ body {
 }
 
 .settings-tab:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .settings-body {
@@ -332,8 +363,8 @@ body {
 
 .setting-input {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 8px;
   padding: 12px;
   color: var(--text-color);
@@ -344,13 +375,13 @@ body {
 .setting-input:focus {
   outline: none;
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.18);
 }
 
 .setting-select {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.14);
   border-radius: 8px;
   padding: 12px;
   color: var(--text-color);
