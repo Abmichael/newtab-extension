@@ -5,6 +5,7 @@
   flex-direction: column;
   align-items: center;
   user-select: none;
+  outline: none;
 }
 
 .folder-button {
@@ -23,6 +24,7 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  outline: none;
 }
 
 .folder-button:hover {
@@ -113,6 +115,84 @@ body.theme-light .folder-overlay {
 .folder-overlay.open {
   display: flex;
   opacity: 1;
+}
+
+/* Localized folder popover (no backdrop) */
+.folder-popover {
+  position: absolute;
+  z-index: 3000;
+  width: 420px;
+  height: 420px;
+  background: rgba(255, 255, 255, 0.92);
+  --text-color: #2b2b2b;
+  color: var(--text-color);
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 12px;
+  box-shadow: 0 18px 40px rgba(0,0,0,0.18);
+  backdrop-filter: blur(6px);
+  transform-origin: center center;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: transform 140ms ease, opacity 140ms ease;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Invisible backdrop for popover close-on-outside-click */
+.folder-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: 2990; /* just below the popover (3000) */
+}
+
+.folder-popover .site-grid {
+  padding: 12px 14px 14px 14px;
+  overflow: auto;
+  flex: 1 1 auto;
+}
+
+.folder-popover .popover-title {
+  padding: 10px 14px 14px 14px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.folder-popover .popover-title-input {
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-color);
+  padding: 10px 14px 14px 14px; /* match .popover-title spacing */
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  outline: none;
+  box-shadow: none;
+  appearance: none;
+  -webkit-appearance: none;
+  caret-color: currentColor;
+}
+
+.folder-popover .popover-title-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* Make text selection invisible to emphasize caret-only editing */
+.folder-popover .popover-title-input::selection {
+  background: transparent;
+}
+.folder-popover .popover-title-input::-moz-selection {
+  background: transparent;
+}
+
+@keyframes folderPopoverIn {
+  from { opacity: 0; transform: scale(0.96) translateY(-6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .folder-modal {
