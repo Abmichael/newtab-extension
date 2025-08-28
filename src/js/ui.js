@@ -938,7 +938,6 @@ class UIManager {
         img.src = src;
         img.loading = "lazy";
         img.alt = previews[i].name || "Site";
-        this.attachFaviconErrorHandler(img, url);
         slot.appendChild(img);
   }
       wrapper.appendChild(slot);
@@ -973,7 +972,6 @@ class UIManager {
   img.src = favicon;
   img.loading = 'lazy';
   img.alt = link.name || 'Link';
-  this.attachFaviconErrorHandler(img, link.url);
   button.appendChild(img);
 
   const label = document.createElement('div');
@@ -983,8 +981,8 @@ class UIManager {
   wrapper.appendChild(button);
   wrapper.appendChild(label);
 
-  // Try to upgrade to a higher resolution icon via the background service worker
-  this.upgradeIconQuality(img, link.url).catch(() => {});
+  // Apply adaptive background to tile
+  this.applyAdaptiveTileBackground(img, link.url);
 
   return wrapper;
   }
@@ -1063,7 +1061,6 @@ class UIManager {
       img.src = favicon;
       img.loading = 'lazy';
       img.alt = site.name || 'Site';
-      this.attachFaviconErrorHandler(img, site.url);
       iconWrap.appendChild(img);
 
       const label = document.createElement('div');
@@ -1072,7 +1069,7 @@ class UIManager {
 
       item.appendChild(iconWrap);
       item.appendChild(label);
-      this.upgradeIconQuality(img, site.url).catch(() => {});
+      this.applyAdaptiveTileBackground(img, site.url);
 
       grid.appendChild(item);
     });
@@ -1119,15 +1116,14 @@ class UIManager {
       img.src = favicon;
       img.loading = 'lazy';
       img.alt = site.name || 'Site';
-      this.attachFaviconErrorHandler(img, site.url);
       button.appendChild(img);
 
       const label = document.createElement('div');
       label.className = 'link-title';
       label.textContent = site.name || site.url;
 
-      // Try to upgrade image quality
-      this.upgradeIconQuality(img, site.url).catch(() => {});
+      // Apply adaptive background to tile
+      this.applyAdaptiveTileBackground(img, site.url);
 
       // DnD payload from popover
       wrapper.addEventListener('dragstart', (e) => {
@@ -1323,109 +1319,97 @@ class UIManager {
     }
   }
 
-  // ============ Favicon helpers ============
+  // ============ Adaptive Backgrounds ============
 
-  attachFaviconErrorHandler(img, url) {
-    const originKey = this.safeOrigin(url);
-    let triedChromeAlt = false;
-    let triedDDG = false;
-    let finalized = false;
-    const onError = () => {
-      if (finalized) return;
-      // 1) Try chrome://favicon/<origin> once if not already that src
-      if (!triedChromeAlt) {
-        triedChromeAlt = true;
-        try {
-          const origin = new URL(url).origin;
-          const alt = `chrome://favicon/${origin}`;
-          if (img.src !== alt) {
-            img.src = alt;
-            return;
-          }
-        } catch (_) { /* ignore */ }
-      }
-      // 2) Try DuckDuckGo icon service once
-      if (!triedDDG) {
-        triedDDG = true;
-        try {
-          const host = new URL(url).hostname;
-          const ddg = `https://icons.duckduckgo.com/ip3/${host}.ico`;
-          if (img.src !== ddg) {
-            img.src = ddg;
-            return;
-          }
-        } catch (_) { /* ignore */ }
-      }
-      // 3) Final fallback: static data URI
-      finalized = true;
-      img.removeEventListener('error', onError);
-      img.src = this.defaultFaviconDataUri();
-    };
-    img.addEventListener('error', onError);
+  /**
+   * Apply adaptive background to tile based on site URL
+   */
+  applyAdaptiveTileBackground(imgEl, siteUrl) {
+    const button = imgEl.closest('.link-button');
+    if (!button || button.dataset.adaptiveApplied) return;
 
-    img.addEventListener("load", () => {
-      this.faviconOk.add(originKey);
-    });
+    // Generate consistent color from domain
+    const baseColor = this.generateDomainColor(siteUrl);
+    
+    // Convert HSL to RGB for alpha values
+    const rgbColor = this.hslToRgb(baseColor);
+    
+    // Apply to entire tile with proper rgba transparency and !important to override CSS
+    button.style.setProperty('background', `linear-gradient(135deg, rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.25), rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.15))`, 'important');
+    button.style.setProperty('border', `1px solid rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.4)`, 'important');
+    button.style.setProperty('--adaptive-color', baseColor);
+    
+    // Add class for CSS animations/effects
+    button.classList.add('adaptive-bg');
+    button.dataset.adaptiveApplied = 'true';
+    
+    // Ensure icon stays clean
+    imgEl.style.width = '32px';
+    imgEl.style.height = '32px';
+    imgEl.style.objectFit = 'contain';
   }
 
   /**
-   * Ask the extension background service worker to fetch a higher-res icon/thumbnail
-   * for the given site URL. If a better image URL is returned, swap the img src.
+   * Generate a consistent color for a domain based on its hostname
    */
-  async upgradeIconQuality(imgEl, siteUrl) {
+  generateDomainColor(url) {
     try {
-      if (!window.chrome?.runtime?.sendMessage) return;
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 2500);
-      const response = await new Promise((resolve, reject) => {
-        try {
-          chrome.runtime.sendMessage(
-            { action: 'fetchHighResIcon', url: siteUrl },
-            (res) => {
-              const err = chrome.runtime.lastError;
-              if (err) return reject(err);
-              resolve(res);
-            }
-          );
-        } catch (e) {
-          reject(e);
-        }
-      });
-      clearTimeout(timeout);
-      if (response && response.success && response.imageUrl && typeof response.imageUrl === 'string') {
-        // Only swap if it looks like a better asset (png/jpg/webp) or bigger than favicon
-        const looksBetter = /\.(png|jpg|jpeg|webp)(\?|$)/i.test(response.imageUrl) || !/^chrome:\/\//.test(response.imageUrl);
-        if (looksBetter) {
-          imgEl.src = response.imageUrl;
-        }
+      const hostname = new URL(url).hostname;
+      let hash = 0;
+      for (let i = 0; i < hostname.length; i++) {
+        const char = hostname.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; // Convert to 32-bit integer
       }
+      
+      // Convert to HSL for pleasant colors
+      const hue = Math.abs(hash) % 360;
+      const saturation = 65 + (Math.abs(hash) % 20); // 65-85%
+      const lightness = 55 + (Math.abs(hash) % 15);  // 55-70%
+      
+      return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     } catch (_) {
-      // ignore upgrade failures silently
+      return 'hsl(220, 70%, 60%)'; // Default blue
     }
   }
 
-  safeOrigin(url) {
-    try {
-      return new URL(url).origin;
-    } catch {
-      return url;
+  /**
+   * Convert HSL color to RGB values for alpha transparency
+   */
+  hslToRgb(hslString) {
+    // Parse HSL string like "hsl(220, 70%, 60%)"
+    const match = hslString.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+    if (!match) return { r: 66, g: 133, b: 244 }; // Default blue
+    
+    const h = parseInt(match[1]) / 360;
+    const s = parseInt(match[2]) / 100;
+    const l = parseInt(match[3]) / 100;
+    
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    
+    let r, g, b;
+    if (s === 0) {
+      r = g = b = l; // achromatic
+    } else {
+      const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+      const p = 2 * l - q;
+      r = hue2rgb(p, q, h + 1/3);
+      g = hue2rgb(p, q, h);
+      b = hue2rgb(p, q, h - 1/3);
     }
-  }
-
-  defaultFaviconDataUri() {
-    // Lightweight inline SVG fallback (1x) tinted with primary color
-    const svg = encodeURIComponent(
-      `<svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20'>` +
-        `<rect rx='4' width='20' height='20' fill='%234285f4'/>` +
-        `<path d='M6 10h8' stroke='white' stroke-width='2' stroke-linecap='round'/>` +
-        `</svg>`
-    );
-    return `data:image/svg+xml;charset=UTF-8,${svg}`;
-  }
-
-  computeFolderBg(color) {
-    // Subtle gradient based on color
-    return `linear-gradient(160deg, ${color} 0%, rgba(255,255,255,0.08) 100%)`;
+    
+    return {
+      r: Math.round(r * 255),
+      g: Math.round(g * 255),
+      b: Math.round(b * 255)
+    };
   }
 
   /**

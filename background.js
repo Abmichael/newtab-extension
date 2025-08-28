@@ -1,10 +1,13 @@
 /**
  * Background service worker for NeoTab extension
- * Handles extension lifecycle and basic background tasks
+ * Handles extension lifecycle and background tasks including high-res icon fetching
  */
+
+console.log('NeoTab background service worker starting...');
 
 // Extension installation/update handler
 chrome.runtime.onInstalled.addListener((details) => {
+  console.log('NeoTab extension installed/updated:', details.reason);
   if (details.reason === 'install') {
     // Set default settings on first install
     chrome.storage.local.set({
@@ -24,92 +27,44 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 // Handle extension startup
 chrome.runtime.onStartup.addListener(() => {
-  // Perform any necessary startup tasks
+  console.log('NeoTab extension startup');
 });
 
 // Handle messages from content scripts or popup
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  switch (request.action) {
-    case 'getVersion':
-      sendResponse({ version: chrome.runtime.getManifest().version });
-      break;
-    
-    case 'exportData':
-      // Handle data export requests
-      chrome.storage.local.get(null, (data) => {
-        sendResponse({ success: true, data: data });
-      });
-      return true; // Will respond asynchronously
-    
-    case 'importData':
-      // Handle data import requests
-      if (request.data) {
-        chrome.storage.local.set(request.data, () => {
-          sendResponse({ success: true });
+  try {
+    switch (request.action) {
+      case 'getVersion':
+        sendResponse({ version: chrome.runtime.getManifest().version });
+        break;
+      
+      case 'exportData':
+        // Handle data export requests
+        chrome.storage.local.get(null, (data) => {
+          sendResponse({ success: true, data: data });
         });
         return true; // Will respond asynchronously
-      }
-      break;
-    
-    case 'fetchHighResIcon': {
-      const url = request.url;
-      if (!url || typeof url !== 'string') {
-        sendResponse({ success: false, error: 'invalid url' });
+      
+      case 'importData':
+        // Handle data import requests
+        if (request.data) {
+          chrome.storage.local.set(request.data, () => {
+            sendResponse({ success: true });
+          });
+          return true; // Will respond asynchronously
+        }
         break;
-      }
-      // Check cache first
-      const cacheKey = `cache-icon-${url}`;
-      chrome.storage.local.get([cacheKey], async (data) => {
-        const cached = data[cacheKey];
-        if (cached && cached.imageUrl && (Date.now() - (cached.ts || 0) < 1000 * 60 * 60 * 24 * 7)) {
-          sendResponse({ success: true, imageUrl: cached.imageUrl, cached: true });
-          return;
-        }
-        try {
-          const highRes = await fetchBestIcon(url);
-          if (highRes) {
-            const toStore = { imageUrl: highRes, ts: Date.now() };
-            chrome.storage.local.set({ [cacheKey]: toStore }, () => {
-              sendResponse({ success: true, imageUrl: highRes });
-            });
-            return;
-          }
-        } catch (e) {
-          // fallthrough to failure
-        }
-        sendResponse({ success: false });
-      });
-      return true; // async
+      
+      default:
+        sendResponse({ error: 'Unknown action' });
     }
-    
-    default:
-      sendResponse({ error: 'Unknown action' });
+  } catch (error) {
+    console.error('Message handler error:', error);
+    sendResponse({ success: false, error: error.message });
   }
 });
 
 // Monitor storage usage to prevent quota issues
-chrome.storage.onChanged.addListener((changes, namespace) => {
-  if (namespace === 'local') {
-    // Check if we're approaching storage limits
-    chrome.storage.local.getBytesInUse(null, (bytesInUse) => {
-      const maxBytes = chrome.storage.local.QUOTA_BYTES;
-      const usagePercent = (bytesInUse / maxBytes) * 100;
-      
-      if (usagePercent > 80) {
-        console.warn('Storage usage high:', usagePercent.toFixed(1) + '%');
-      }
-    });
-  }
-});
-
-// Cleanup old data periodically
-chrome.alarms.create('cleanup', { periodInMinutes: 60 });
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'cleanup') {
-    // Perform periodic cleanup tasks
-    cleanupOldData();
-  }
-});
 
 function cleanupOldData() {
   chrome.storage.local.get(null, (data) => {
@@ -136,45 +91,90 @@ async function fetchBestIcon(pageUrl) {
   try {
     const u = new URL(pageUrl);
     const origin = u.origin;
-    // 1) Try common favicon endpoints with larger sizes
+    
+    // 1) Try common high-res favicon endpoints first (no CORS issues)
     const candidates = [
-      `${origin}/favicon.png`,
-      `${origin}/favicon.ico`,
       `${origin}/apple-touch-icon.png`,
       `${origin}/apple-touch-icon-precomposed.png`,
-      `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=64`,
-      `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=128`,
-      `https://icons.duckduckgo.com/ip3/${u.hostname}.ico`
+      `${origin}/favicon-192x192.png`,
+      `${origin}/favicon-180x180.png`,
+      `${origin}/favicon.png`,
+      `${origin}/android-chrome-192x192.png`,
+      `${origin}/android-chrome-512x512.png`
     ];
     for (const href of candidates) {
-      const ok = await checkImageOk(href);
-      if (ok) return href;
+      const valid = await isValidImage(href);
+      if (valid) return href;
     }
-    // 2) Fetch page and look for <meta property="og:image"> or icons
-    const html = await fetchText(pageUrl);
-    if (html) {
-      const og = matchMetaContent(html, /(property|name)=["']og:image["'][^>]*content=["']([^"']+)["']/i);
-      if (og) {
-        const abs = absolutizeUrl(og, u);
-        const ok = await checkImageOk(abs);
-        if (ok) return abs;
+    
+    // 2) Try to fetch page HTML for OG tags (may have CORS issues)
+    try {
+      const html = await fetchText(pageUrl);
+      if (html) {
+        // Look for OpenGraph image
+        const ogImage = extractMetaContent(html, [
+          /(property|name)=["']og:image["'][^>]*content=["']([^"']+)["']/i,
+          /(property|name)=["']og:image:url["'][^>]*content=["']([^"']+)["']/i
+        ]);
+        if (ogImage) {
+          const abs = absolutizeUrl(ogImage, u);
+          const valid = await isValidImage(abs);
+          if (valid) return abs;
+        }
+
+        // Look for Twitter Card image
+        const twitterImage = extractMetaContent(html, [
+          /(property|name)=["']twitter:image["'][^>]*content=["']([^"']+)["']/i,
+          /(property|name)=["']twitter:image:src["'][^>]*content=["']([^"']+)["']/i
+        ]);
+        if (twitterImage) {
+          const abs = absolutizeUrl(twitterImage, u);
+          const valid = await isValidImage(abs);
+          if (valid) return abs;
+        }
+
+        // Look for high-res favicon links in HTML
+        const linkIcon = extractLinkHref(html, [
+          /rel=["'][^"']*(apple-touch-icon-precomposed)[^"']*["'][^>]*href=["']([^"']+)["']/i,
+          /rel=["'][^"']*(apple-touch-icon)[^"']*["'][^>]*href=["']([^"']+)["']/i,
+          /rel=["'][^"']*(icon)[^"']*["'][^>]*sizes=["'][^"']*192[^"']*["'][^>]*href=["']([^"']+)["']/i,
+          /rel=["'][^"']*(icon)[^"']*["'][^>]*sizes=["'][^"']*180[^"']*["'][^>]*href=["']([^"']+)["']/i,
+          /rel=["'][^"']*(icon)[^"']*["'][^>]*href=["']([^"']+\.png)["']/i
+        ]);
+        if (linkIcon) {
+          const abs = absolutizeUrl(linkIcon, u);
+          const valid = await isValidImage(abs);
+          if (valid) return abs;
+        }
       }
-      const linkIcon = matchLinkHref(html, /rel=["'][^"']*(icon|shortcut icon|apple-touch-icon)[^"']*["'][^>]*href=["']([^"']+)["']/i);
-      if (linkIcon) {
-        const abs = absolutizeUrl(linkIcon, u);
-        const ok = await checkImageOk(abs);
-        if (ok) return abs;
-      }
+    } catch (corsError) {
+      console.log('CORS blocked page fetch for', pageUrl, '- using fallback strategy');
     }
+
+    // 3) Use adaptive background approach with regular favicon
+    return { useAdaptiveBackground: true, faviconUrl: `chrome://favicon/${origin}` };
+    
   } catch (_) { /* ignore */ }
   return null;
 }
 
-async function checkImageOk(url) {
+async function isValidImage(url) {
   try {
-    const res = await fetch(url, { method: 'GET', mode: 'no-cors', cache: 'force-cache' });
-    // In MV3 SW with no-cors, status may be 0; we can attempt an Image decode approach instead
-    return true; // allow optimistic usage; the UI will fallback if it errors
+    // Create timeout manually for better browser compatibility
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    
+    const res = await fetch(url, { 
+      method: 'HEAD', 
+      mode: 'no-cors', // Use no-cors to avoid CORS issues for simple checks
+      cache: 'force-cache',
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    // With no-cors, we can't check response status or headers, so we assume success
+    // if the fetch doesn't throw an error
+    return true;
   } catch (_) {
     return false;
   }
@@ -182,20 +182,42 @@ async function checkImageOk(url) {
 
 async function fetchText(url) {
   try {
-    const res = await fetch(url, { method: 'GET' });
+    // Create timeout manually for better browser compatibility  
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const res = await fetch(url, { 
+      method: 'GET',
+      mode: 'cors', // Try CORS first
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
     if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || '';
+    if (!contentType.includes('text/html')) return null;
     return await res.text();
-  } catch (_) { return null; }
+  } catch (corsError) { 
+    // If CORS fails, we can't fetch the HTML, return null
+    console.log('CORS blocked HTML fetch for', url);
+    return null; 
+  }
 }
 
-function matchMetaContent(html, regex) {
-  const m = html.match(regex);
-  return m ? m[2] : null;
+function extractMetaContent(html, regexes) {
+  for (const regex of regexes) {
+    const m = html.match(regex);
+    if (m && m[2]) return m[2];
+  }
+  return null;
 }
 
-function matchLinkHref(html, regex) {
-  const m = html.match(regex);
-  return m ? m[2] : null;
+function extractLinkHref(html, regexes) {
+  for (const regex of regexes) {
+    const m = html.match(regex);
+    if (m && m[2]) return m[2];
+  }
+  return null;
 }
 
 function absolutizeUrl(href, baseUrl) {

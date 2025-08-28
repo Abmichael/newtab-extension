@@ -10,7 +10,9 @@
     "newtab": "index.html"
   },
 
-  "permissions": ["storage"],
+  "permissions": ["storage", "host_permissions"],
+  
+  "host_permissions": ["https://*/*", "http://*/*"],
 
   "content_security_policy": {
     "extension_pages": "default-src 'self'; connect-src 'self' https: http:; style-src 'self' 'unsafe-inline'; img-src 'self' data: chrome: chrome-extension: https: http:;"

@@ -420,10 +420,10 @@ class FolderSystem {
   generateFaviconUrl(url) {
     try {
       const u = new URL(url);
-      // Prefer chrome://favicon which Chrome resolves locally
-      return `chrome://favicon/${u.origin}`;
+      // Use DuckDuckGo favicon service for reliable icons
+      return `https://icons.duckduckgo.com/ip3/${u.hostname}.ico`;
     } catch (e) {
-      return 'chrome://favicon/';
+      return 'https://icons.duckduckgo.com/ip3/duckduckgo.com.ico';
     }
   }
 
