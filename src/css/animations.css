@@ -45,6 +45,13 @@
   opacity: 0;
   animation: dropIndicatorShow 0.12s ease forwards;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 30%, transparent), 0 0 18px rgba(66,133,244,0.25);
+  transition: transform 120ms ease;
+  pointer-events: none;
+}
+
+/* During dragging, widen the indicator to make snap spots clearer */
+.folder-grid.drag-active > .drop-indicator {
+  width: calc(var(--folder-size, 120px) + 12px);
 }
 
 @keyframes dropIndicatorShow {
@@ -105,3 +112,16 @@
 
 /* Remove default focus outline for mouse users */
 .folder-item:focus { outline: none; }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .folder-grid > *,
+  .folder-overlay.open .folder-modal,
+  .context-menu,
+  .dialog-overlay,
+  .dialog,
+  .drop-indicator {
+    animation: none !important;
+    transition: none !important;
+  }
+}

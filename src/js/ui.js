@@ -24,6 +24,20 @@ class UIManager {
     this.draggedElement = null;
     this.dropIndicator = null;
 
+    // DnD smoothing and performance tuning
+    this._dnd = {
+      raf: 0,
+      lastPoint: null, // {x,y}
+      lastIndex: null,
+      lastHoverEl: null,
+      tiles: [], // cached during drag
+      centers: [], // cached {x,y}
+      indicatorIndex: null,
+      // thresholds in pixels
+      moveThreshold: 8, // minimum movement to recompute heavy stuff
+      hysteresis: 14, // distance away from current snap before changing index
+    };
+
     this.bindEvents();
     this.initializeDragDrop();
   }
@@ -170,7 +184,10 @@ class UIManager {
       if (!isDropZone) return;
       
       const now = performance.now();
-      if (now - lastOver < 16) { e.preventDefault(); return; }
+      if (now - lastOver < 8) { // lightweight throttle; real batching in RAF
+        e.preventDefault();
+        return;
+      }
       lastOver = now;
       this.onDragOver(e);
     };
@@ -192,7 +209,7 @@ class UIManager {
     document.addEventListener("dragover", handleGlobalDragOver);
     document.addEventListener("drop", handleGlobalDrop);
     
-    document.addEventListener("dragend", (e) => this.onDragEnd(e));
+  document.addEventListener("dragend", (e) => this.onDragEnd(e));
 
     // Global click handler to close context menus
     document.addEventListener("click", this.closeContextMenu.bind(this));
@@ -293,38 +310,138 @@ class UIManager {
       : { type: 'link', id: linkTile.dataset.linkId };
     event.dataTransfer.setData('application/json', JSON.stringify(payload));
     event.dataTransfer.effectAllowed = 'move';
-    this.draggedElement = folderTile || linkTile;
+  this.draggedElement = folderTile || linkTile;
     (folderTile || linkTile).classList.add('dragging');
+  this.container.classList.add('drag-active');
+
+  // Track drag type for onDragOver behavior
+  this._dnd.dragType = payload.type;
+
+    // Cache tiles and their centers for the duration of this drag
+    const tiles = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
+    this._dnd.tiles = tiles;
+    // Avoid layout thrash by reading all rects at once
+    this._dnd.centers = tiles.map((tile) => {
+      const r = tile.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    });
+    this._dnd.lastPoint = null;
+    this._dnd.lastIndex = null;
+    this._dnd.indicatorIndex = null;
   }
 
   onDragOver(event) {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
-    const targetFolder = event.target.closest('.folder-item');
-    const targetLink = event.target.closest('.link-item');
-    const tiles = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
 
-    // Decide mode: hover-target vs reorder indicator. Prefer hover highlight when directly over a tile.
-    this.clearHoverStates();
-    const overFolder = targetFolder;
-    const overLink = targetLink;
-    if (overFolder || overLink) {
-      // Show hover highlight only, hide drop indicator to avoid confusion
-      this.removeDropIndicator();
-      if (overFolder) overFolder.classList.add('dnd-over-folder');
-      if (overLink) overLink.classList.add('dnd-over-link');
-    } else {
-      // Show drop indicator at nearest insertion slot
-      const point = { x: event.clientX, y: event.clientY };
-      const index = this.findInsertIndex(tiles, point);
-      const indicator = this.getOrCreateDropIndicator();
-      const refNode = tiles[index] || null;
-      if (refNode) {
-        this.container.insertBefore(indicator, refNode);
-      } else {
-        this.container.appendChild(indicator);
+    // Stage latest point, batch heavy work in RAF
+    this._dnd.lastPoint = { x: event.clientX, y: event.clientY };
+
+    if (this._dnd.raf) return; // already scheduled
+    this._dnd.raf = requestAnimationFrame(() => {
+      this._dnd.raf = 0;
+      const point = this._dnd.lastPoint;
+      if (!point) return;
+
+      // Ensure we have cached tiles/centers (drag may originate outside main grid)
+      if (!this._dnd.tiles || this._dnd.tiles.length === 0) {
+        this.ensureDnDCenters();
       }
-    }
+
+      // Early exit if movement is insignificant
+      const lp = this._dnd._prevPoint;
+      if (lp) {
+        const dx = point.x - lp.x;
+        const dy = point.y - lp.y;
+        if ((dx*dx + dy*dy) < (this._dnd.moveThreshold * this._dnd.moveThreshold)) {
+          return;
+        }
+      }
+      this._dnd._prevPoint = point;
+
+  // Hover highlight: only update when the hovered element changes
+      let targetFolder = null; let targetLink = null;
+      const els = (document.elementsFromPoint ? document.elementsFromPoint(point.x, point.y) : [document.elementFromPoint(point.x, point.y)]);
+      if (els && els.length) {
+        for (const el of els) {
+          if (el?.classList?.contains('drop-indicator')) continue; // ignore our indicator
+          if (el?.classList?.contains('folder-popover') || el?.classList?.contains('folder-popover-backdrop')) continue; // ignore overlay layers
+          const f = el.closest?.('.folder-item');
+          const l = el.closest?.('.link-item');
+          if (f && this.container.contains(f)) { targetFolder = f; break; }
+          if (l && this.container.contains(l)) { targetLink = l; break; }
+        }
+      }
+      const newHover = targetFolder || targetLink;
+      if (newHover !== this._dnd.lastHoverEl) {
+        this.clearHoverStates();
+        if (targetFolder) targetFolder.classList.add('dnd-over-folder');
+        if (targetLink) targetLink.classList.add('dnd-over-link');
+        this._dnd.lastHoverEl = newHover;
+        // When hovering a tile directly, hide indicator (avoid jitter)
+        if (newHover) this.removeDropIndicator();
+      }
+
+      const dragType = this._dnd.dragType;
+      const shouldShowIndicator = (dragType === 'folder' || dragType === 'link') || (!newHover);
+      // If dragging a site onto a tile, prefer hover mode and hide indicator
+      if (dragType === 'site' && newHover) {
+        this.removeDropIndicator();
+        return;
+      }
+
+      if (shouldShowIndicator) {
+        // If hovering a tile during folder/link reorder, choose side (before/after) based on pointer half
+        let index;
+        let bypassHysteresis = false;
+        if (newHover && (dragType === 'folder' || dragType === 'link')) {
+          const tilesArr = this._dnd.tiles || [];
+          const hoverIdx = tilesArr.indexOf(newHover);
+          if (hoverIdx >= 0) {
+            const r = newHover.getBoundingClientRect();
+            const cx = r.left + r.width / 2;
+            // Tolerance to avoid flicker near exact center
+            const tol = Math.max(4, Math.min(10, r.width * 0.06));
+            index = (point.x < (cx - tol)) ? hoverIdx : (hoverIdx + 1);
+            bypassHysteresis = true;
+          }
+        }
+        if (index == null) {
+          // Fallback to nearest tile center
+          index = this.findInsertIndexCached(point);
+        }
+        const prev = this._dnd.indicatorIndex;
+        if (prev == null || (bypassHysteresis ? (prev !== index) : this.shouldSnapToIndex(point, prev, index))) {
+          this._dnd.indicatorIndex = index;
+          const refNode = this._dnd.tiles[index] || null;
+          const indicator = this.getOrCreateDropIndicator();
+          // FLIP for smoother move: remember from position
+          const fromRect = indicator.parentNode ? indicator.getBoundingClientRect() : null;
+          if (refNode) {
+            this.container.insertBefore(indicator, refNode);
+          } else {
+            this.container.appendChild(indicator);
+          }
+          if (fromRect) {
+            const toRect = indicator.getBoundingClientRect();
+            const dx = fromRect.left - toRect.left;
+            const dy = fromRect.top - toRect.top;
+            const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (!reduced && (Math.abs(dx) + Math.abs(dy) > 1)) {
+              indicator.style.transition = 'none';
+              indicator.style.transform = `translate(${dx}px, ${dy}px)`;
+              // next frame: animate to place
+              requestAnimationFrame(() => {
+                indicator.style.transition = 'transform 120ms ease';
+                indicator.style.transform = 'translate(0, 0)';
+              });
+            }
+          }
+          // Update cached centers since DOM flow changed
+          this.recomputeCenters();
+        }
+      }
+    });
   }
 
   handleDragEnter(event) {
@@ -345,52 +462,73 @@ class UIManager {
 
     const dropFolder = event.target.closest('.folder-item');
     const dropLink = event.target.closest('.link-item');
-    const tiles = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
-    const index = this.findInsertIndex(tiles, { x: event.clientX, y: event.clientY });
-    const dropRef = tiles[index] || null;
+    const tiles = (this._dnd.tiles && this._dnd.tiles.length) ? this._dnd.tiles : Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
+    const point = { x: event.clientX, y: event.clientY };
+    const index = (this._dnd.centers && this._dnd.centers.length) ? this.findInsertIndexCached(point) : this.findInsertIndex(tiles, point);
 
     try {
-      if (payload.type === 'site') {
+    if (payload.type === 'site') {
         if (dropFolder) {
           await this.folderSystem.moveSiteBetweenFolders(payload.folderId, payload.id, dropFolder.dataset.folderId);
+      // Update both source and target folder previews
+      this.updateFolderTilePreview(payload.folderId);
+      this.updateFolderTilePreview(dropFolder.dataset.folderId);
         } else if (dropLink) {
           const targetId = dropLink.dataset.linkId;
           const targetIndex = tiles.indexOf(dropLink);
           const insertIdx = targetIndex >= 0 ? targetIndex : index;
           const tempLink = await this.folderSystem.moveSiteToRoot(payload.folderId, payload.id, insertIdx);
-          await this.folderSystem.createFolderFromRootLinks([tempLink.id, targetId], undefined, insertIdx);
+          const newFolder = await this.folderSystem.createFolderFromRootLinks([tempLink.id, targetId], undefined, insertIdx);
+          // Replace target link with new folder tile
+          dropLink.remove();
+          const folderEl = this.createFolderElement(newFolder);
+          this.insertNodeAtIndex(folderEl, insertIdx);
+      // Update source folder preview (site removed)
+      this.updateFolderTilePreview(payload.folderId);
         } else {
-          await this.folderSystem.moveSiteToRoot(payload.folderId, payload.id, index);
+          const link = await this.folderSystem.moveSiteToRoot(payload.folderId, payload.id, index);
+          const linkEl = this.createLinkTile(link);
+          this.insertNodeAtIndex(linkEl, index);
+      // Update source folder preview (site removed)
+      this.updateFolderTilePreview(payload.folderId);
         }
-        // Close popover to avoid stale view
         this.closeFolderPopover?.();
       } else if (dropFolder) {
-        // If dropping onto a folder tile surface
+        // Dropping onto a folder tile
         if (payload.type === 'link') {
-          // Move link into folder
           await this.folderSystem.moveLinkToFolder(payload.id, dropFolder.dataset.folderId);
+          this.removeTileByDataset('link', payload.id);
+          this.updateFolderTilePreview(dropFolder.dataset.folderId);
         } else if (payload.type === 'folder') {
-          // Merge folders
           await this.folderSystem.mergeFolders(payload.id, dropFolder.dataset.folderId);
+          this.removeTileByDataset('folder', payload.id);
+          this.updateFolderTilePreview(dropFolder.dataset.folderId);
         }
       } else if (dropLink && payload.type === 'link' && dropLink.dataset.linkId !== payload.id) {
-        // Link onto link: create a folder with both links at the target position
+        // Link onto link -> new folder
         const targetId = dropLink.dataset.linkId;
-        // Determine insertion index at position of target link
         const targetIndex = tiles.indexOf(dropLink);
         const insertIdx = targetIndex >= 0 ? targetIndex : index;
-        await this.folderSystem.createFolderFromRootLinks([payload.id, targetId], undefined, insertIdx);
+        const newFolder = await this.folderSystem.createFolderFromRootLinks([payload.id, targetId], undefined, insertIdx);
+        this.removeTileByDataset('link', payload.id);
+        dropLink.remove();
+        const folderEl = this.createFolderElement(newFolder);
+        this.insertNodeAtIndex(folderEl, insertIdx);
       } else {
-        // Reorder in root grid relative to index
-        const newIndex = index; // this index points to before the ref node
+        // Reorder in root grid
+        const newIndex = index;
         await this.folderSystem.reorderRootItem(payload.type, payload.id, newIndex);
+        const dragged = this.draggedElement;
+        if (dragged && this.container.contains(dragged)) {
+          this.insertNodeAtIndex(dragged, newIndex);
+        }
       }
     } catch (err) {
       console.error('DnD drop failed:', err);
     }
 
     this.cleanupDnD();
-    this.refreshFolders();
+    // No full re-render; DOM updated in place
   }
 
   onDragEnd(event) { this.cleanupDnD(); }
@@ -402,6 +540,17 @@ class UIManager {
     }
     this.clearHoverStates();
     this.removeDropIndicator();
+    this.container.classList.remove('drag-active');
+  // reset caches
+  if (this._dnd.raf) cancelAnimationFrame(this._dnd.raf);
+  this._dnd.raf = 0;
+  this._dnd.lastPoint = null;
+  this._dnd._prevPoint = null;
+  this._dnd.lastHoverEl = null;
+  this._dnd.tiles = [];
+  this._dnd.centers = [];
+  this._dnd.indicatorIndex = null;
+  this._dnd.dragType = null;
   }
 
   clearHoverStates() {
@@ -425,10 +574,58 @@ class UIManager {
     return bestIdx;
   }
 
+  // Cached variant to avoid layout reads during drag
+  findInsertIndexCached(point) {
+    const centers = this._dnd.centers || [];
+    if (!centers.length) return 0;
+    let bestIdx = centers.length; let bestDist = Infinity;
+    for (let i = 0; i < centers.length; i++) {
+      const c = centers[i];
+      const dx = point.x - c.x; const dy = point.y - c.y;
+      const d = dx*dx + dy*dy;
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    }
+    return bestIdx;
+  }
+
+  // Only allow snapping when pointer has moved sufficiently away from current snap center
+  shouldSnapToIndex(point, currentIndex, nextIndex) {
+    if (nextIndex === currentIndex) return false;
+    const centers = this._dnd.centers;
+    if (!centers || !centers[currentIndex] || !centers[nextIndex]) return true;
+    const cur = centers[currentIndex];
+    const dx = point.x - cur.x; const dy = point.y - cur.y;
+    return (dx*dx + dy*dy) > (this._dnd.hysteresis * this._dnd.hysteresis);
+  }
+
+  // Recalculate cached tile centers (lightweight, called only on indicator move)
+  recomputeCenters() {
+    const tiles = this._dnd.tiles;
+    if (!tiles || !tiles.length) return;
+    this._dnd.centers = tiles.map((tile) => {
+      const r = tile.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    });
+  }
+
+  // Initialize tiles and centers cache if missing
+  ensureDnDCenters() {
+    const tiles = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
+    this._dnd.tiles = tiles;
+    this._dnd.centers = tiles.map((tile) => {
+      const r = tile.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    });
+  }
+
   getOrCreateDropIndicator() {
     if (!this.dropIndicator) {
       this.dropIndicator = document.createElement("div");
       this.dropIndicator.className = "drop-indicator";
+  // Align horizontal spacing with grid gap
+  const cs = getComputedStyle(this.container);
+  const gap = cs.getPropertyValue('--gap-size') || cs.gap || '24px';
+  this.dropIndicator.style.margin = `0 calc(${gap} / 2)`;
     }
     return this.dropIndicator;
   }
@@ -437,6 +634,43 @@ class UIManager {
     if (this.dropIndicator && this.dropIndicator.parentNode) {
       this.dropIndicator.parentNode.removeChild(this.dropIndicator);
     }
+  }
+
+  // ---- DOM helpers for in-place updates (avoid full re-render) ----
+  insertNodeAtIndex(node, index) {
+    const tilesWithAdd = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
+    const addTile = tilesWithAdd.find(el => el.classList.contains('add-tile')) || null;
+    // Ensure node is not duplicated in DOM
+    if (node.parentNode === this.container) {
+      // If already in DOM, remove to allow reinsertion
+      this.container.removeChild(node);
+    }
+    const ref = tilesWithAdd[index] || addTile;
+    if (ref) {
+      this.container.insertBefore(node, ref);
+    } else {
+      this.container.appendChild(node);
+    }
+  }
+
+  removeTileByDataset(type, id) {
+    const sel = type === 'folder'
+      ? `.folder-item[data-folder-id="${id}"]`
+      : `.link-item[data-link-id="${id}"]`;
+    const el = this.container.querySelector(sel);
+    if (el) el.remove();
+  }
+
+  updateFolderTilePreview(folderId) {
+    const folderEl = this.container.querySelector(`.folder-item[data-folder-id="${folderId}"]`);
+    if (!folderEl) return;
+    const button = folderEl.querySelector('.folder-button');
+    if (!button) return;
+    // Clear existing preview slots
+    while (button.firstChild) button.removeChild(button.firstChild);
+    const folder = this.folderSystem.getFolderById(folderId);
+    const preview = this.createFolderPreview(folder?.sites || []);
+    while (preview.firstChild) button.appendChild(preview.firstChild);
   }
 
   // ============ Context Menu ============
@@ -1132,6 +1366,9 @@ class UIManager {
         e.dataTransfer.effectAllowed = 'move';
         wrapper.classList.add('dragging');
         this.draggedElement = wrapper;
+  // Mark drag type and enable wider gaps in root grid during cross-surface drag
+  this._dnd.dragType = 'site';
+  this.container.classList.add('drag-active');
       });
       wrapper.addEventListener('dragend', () => {
         wrapper.classList.remove('dragging');
