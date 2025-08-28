@@ -76,9 +76,10 @@ cat > $BUILD_DIR/index.html << 'EOF'
         <div class="folder-overlay" id="folder-overlay">
             <!-- Folder content overlay will be generated here -->
         </div>
-        <div class="add-button" id="add-button">
-            <span>+</span>
-        </div>
+                <button class="add-button" id="add-button" aria-label="Add Folder">
+                    <span class="icon">📁</span>
+                    <span class="label">Add Folder</span>
+                </button>
     </div>
     <script src="js/app.min.js"></script>
 </body>

@@ -102,13 +102,11 @@ body.theme-light .clock-widget {
   padding: 40px;
 }
 
-/* Folder grid - CSS Grid layout for responsive folders */
+/* Folder grid - Flex layout: left aligned, wrapping, fixed spacing */
 .folder-grid {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(var(--folder-size), 1fr)
-  );
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
   gap: var(--gap-size);
   max-width: 1400px;
   width: 100%;
@@ -130,28 +128,29 @@ body.theme-light .clock-widget {
 /* Add button */
 .add-button {
   position: fixed;
-  bottom: 30px;
-  right: 30px;
-  width: 60px; /* >= 44px touch target */
-  height: 60px; /* >= 44px touch target */
+  bottom: 24px;
+  right: 24px;
   background: var(--primary-color);
-  border-radius: 50%;
-  display: flex;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 16px;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 24px;
-  font-weight: 300;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4);
-  transition: all 0.3s ease;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  box-shadow: 0 6px 18px rgba(66, 133, 244, 0.35);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
+.add-button .icon { font-size: 18px; }
+.add-button .label { line-height: 1; }
+
 .add-button:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 20px rgba(66, 133, 244, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(66, 133, 244, 0.5);
 }
 
 /* Responsive design */
@@ -170,13 +169,7 @@ body.theme-light .clock-widget {
     --gap-size: 16px;
   }
 
-  .add-button {
-    bottom: 20px;
-    right: 20px;
-    width: 56px; /* keep >= 44px */
-    height: 56px;
-    font-size: 20px;
-  }
+  .add-button { bottom: 20px; right: 20px; }
 }
 
 /* Tablet */

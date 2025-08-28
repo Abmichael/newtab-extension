@@ -10,6 +10,8 @@ class FolderSystem {
     this.storage = storageManager;
     this.data = null; // full persisted object { folders, settings, version }
     this.folders = []; // convenience reference to this.data.folders
+  this.links = []; // root-level links shown alongside folders
+  this.rootOrder = []; // [{ type: 'folder'|'link', id: string }]
   }
 
   /**
@@ -22,12 +24,21 @@ class FolderSystem {
       this.data = this.storage.defaultData;
     }
     this.folders = this.data.folders;
+  this.links = Array.isArray(this.data.links) ? this.data.links : (this.data.links = []);
+    this.rootOrder = Array.isArray(this.data.rootOrder)
+      ? this.data.rootOrder
+      : (this.data.rootOrder = [
+          ...this.links.map(l => ({ type: 'link', id: l.id })),
+          ...this.folders.map(f => ({ type: 'folder', id: f.id })),
+        ]);
     return this.folders;
   }
 
   /** Persist current data to storage */
   async save() {
     // this.data.folders already points to this.folders
+  this.data.links = this.links;
+  this.data.rootOrder = this.rootOrder;
     return await this.storage.saveData(this.data);
   }
 
@@ -77,6 +88,8 @@ class FolderSystem {
       ...extra,
     };
     this.folders.push(folder);
+  // Append to root order
+  this.rootOrder.push({ type: 'folder', id: folder.id });
     await this.save();
     return folder;
   }
@@ -102,6 +115,7 @@ class FolderSystem {
     const idx = this.folders.findIndex(f => f.id === id);
     if (idx === -1) throw new Error('Folder not found');
     const [removed] = this.folders.splice(idx, 1);
+  this.rootOrder = this.rootOrder.filter(e => !(e.type === 'folder' && e.id === id));
     await this.save();
     return removed;
   }
@@ -131,6 +145,174 @@ class FolderSystem {
   /** Get all folders in order */
   getAllFolders() {
     return this.folders;
+  }
+
+  /** Get root items in display order */
+  getRootItems() {
+    const byFolder = new Map(this.folders.map(f => [f.id, f]));
+    const byLink = new Map(this.links.map(l => [l.id, l]));
+    return this.rootOrder
+      .map(e => e.type === 'folder'
+        ? (byFolder.get(e.id) ? { type: 'folder', item: byFolder.get(e.id) } : null)
+        : (byLink.get(e.id) ? { type: 'link', item: byLink.get(e.id) } : null))
+      .filter(Boolean);
+  }
+
+  // =============== Root Links ==================
+
+  /** Get all root-level links */
+  getAllLinks() {
+    return this.links;
+  }
+
+  /** Add a root-level link */
+  async addRootLink(linkData) {
+    const name = this.sanitizeInput(linkData?.name || 'New Link');
+    const url = this.sanitizeUrl(linkData?.url || '');
+    try { new URL(url); } catch { throw new Error('Invalid URL'); }
+    const link = {
+      id: this.generateId(),
+      name,
+      url,
+      icon: linkData?.icon || this.generateFaviconUrl(url),
+    };
+    this.links.push(link);
+  this.rootOrder.push({ type: 'link', id: link.id });
+    await this.save();
+    return link;
+  }
+
+  /** Update a root-level link */
+  async updateRootLink(linkId, data) {
+    const link = this.links.find(l => l.id === linkId);
+    if (!link) throw new Error('Link not found');
+    if ('name' in data) link.name = this.sanitizeInput(data.name);
+    if ('url' in data) {
+      const u = this.sanitizeUrl(data.url);
+      try { new URL(u); } catch { throw new Error('Invalid URL'); }
+      link.url = u;
+      // refresh icon if not explicitly set
+      if (!data.icon) {
+        link.icon = this.generateFaviconUrl(u);
+      }
+    }
+    if ('icon' in data) link.icon = data.icon || this.generateFaviconUrl(link.url);
+    await this.save();
+    return link;
+  }
+
+  /** Delete a root-level link */
+  async deleteRootLink(linkId) {
+    const idx = this.links.findIndex(l => l.id === linkId);
+    if (idx === -1) throw new Error('Link not found');
+    const [removed] = this.links.splice(idx, 1);
+  this.rootOrder = this.rootOrder.filter(e => !(e.type === 'link' && e.id === linkId));
+    await this.save();
+    return removed;
+  }
+
+  /** Reorder a root-level link to new index */
+  async reorderRootLink(linkId, newIndex) {
+    const currentIndex = this.links.findIndex(l => l.id === linkId);
+    if (currentIndex === -1) throw new Error('Link not found');
+    const clamped = Math.max(0, Math.min(newIndex, this.links.length - 1));
+    const [moved] = this.links.splice(currentIndex, 1);
+    this.links.splice(clamped, 0, moved);
+    await this.save();
+    return this.links;
+  }
+
+  /** Reorder any root item (folder or link) by type and id */
+  async reorderRootItem(type, id, newIndex) {
+    const idx = this.rootOrder.findIndex(e => e.type === type && e.id === id);
+    if (idx === -1) throw new Error('Root item not found');
+    const clamped = Math.max(0, Math.min(newIndex, this.rootOrder.length - 1));
+    const [moved] = this.rootOrder.splice(idx, 1);
+    this.rootOrder.splice(clamped, 0, moved);
+    await this.save();
+    return this.rootOrder;
+  }
+
+  /** Move a root link into a folder as a site */
+  async moveLinkToFolder(linkId, folderId) {
+    const folder = this.getFolderById(folderId);
+    if (!folder) throw new Error('Folder not found');
+    const idx = this.links.findIndex(l => l.id === linkId);
+    if (idx === -1) throw new Error('Link not found');
+    const [link] = this.links.splice(idx, 1);
+    this.rootOrder = this.rootOrder.filter(e => !(e.type === 'link' && e.id === linkId));
+
+    // Convert to site
+    const site = {
+      id: this.generateId(),
+      name: this.sanitizeInput(link.name),
+      url: this.sanitizeUrl(link.url),
+      icon: link.icon || this.generateFaviconUrl(link.url),
+    };
+    folder.sites.push(site);
+    await this.save();
+    return { folder, site };
+  }
+
+  /** Merge source folder into target folder, then remove source folder */
+  async mergeFolders(sourceFolderId, targetFolderId) {
+    if (sourceFolderId === targetFolderId) return;
+    const source = this.getFolderById(sourceFolderId);
+    const target = this.getFolderById(targetFolderId);
+    if (!source || !target) throw new Error('Folder not found');
+
+    // Move all sites from source to target (append)
+    target.sites.push(...(source.sites || []));
+    source.sites = [];
+
+    // Remove source folder from collections
+    await this.deleteFolder(sourceFolderId);
+    // deleteFolder calls save; but target.sites already updated. Save again to persist final state
+    await this.save();
+    return target;
+  }
+
+  /**
+   * Create a folder from one or more root links and insert into rootOrder at index
+   * @param {string[]} linkIds - root link IDs to move into the new folder
+   * @param {string} [folderName] - optional folder name
+   * @param {number} [insertIndex] - index in rootOrder to insert the new folder
+   */
+  async createFolderFromRootLinks(linkIds, folderName, insertIndex) {
+    if (!Array.isArray(linkIds) || linkIds.length < 1) throw new Error('No links provided');
+    const linkMap = new Map(this.links.map(l => [l.id, l]));
+    const selected = linkIds.map(id => linkMap.get(id)).filter(Boolean);
+    if (selected.length === 0) throw new Error('Links not found');
+
+    const name = this.sanitizeInput(
+      folderName || (selected.length === 1 ? (selected[0].name || 'New Folder') : `${selected[0].name || 'Folder'} +${selected.length - 1}`)
+    );
+
+    // Create folder and convert links to sites
+    const folder = {
+      id: this.generateId(),
+      name,
+      sites: selected.map(l => ({
+        id: this.generateId(),
+        name: this.sanitizeInput(l.name),
+        url: this.sanitizeUrl(l.url),
+        icon: l.icon || this.generateFaviconUrl(l.url),
+      })),
+    };
+
+    // Remove links from root collections
+    const linkIdSet = new Set(linkIds);
+    this.links = this.links.filter(l => !linkIdSet.has(l.id));
+    this.rootOrder = this.rootOrder.filter(e => !(e.type === 'link' && linkIdSet.has(e.id)));
+
+    // Insert folder into collections
+    this.folders.push(folder);
+    const entry = { type: 'folder', id: folder.id };
+    const idx = Number.isInteger(insertIndex) ? Math.max(0, Math.min(insertIndex, this.rootOrder.length)) : this.rootOrder.length;
+    this.rootOrder.splice(idx, 0, entry);
+
+    await this.save();
+    return folder;
   }
 
   // =============== Site Management ==============
@@ -192,6 +374,46 @@ class FolderSystem {
     const [removed] = folder.sites.splice(idx, 1);
     await this.save();
     return removed;
+  }
+
+  /** Move a site from a folder to the root grid as a link; insert into rootOrder at index (optional) */
+  async moveSiteToRoot(folderId, siteId, insertIndex) {
+    const folder = this.getFolderById(folderId);
+    if (!folder) throw new Error('Folder not found');
+    const idx = folder.sites.findIndex(s => s.id === siteId);
+    if (idx === -1) throw new Error('Site not found');
+    const [site] = folder.sites.splice(idx, 1);
+
+    // Create a root link from site
+    const link = {
+      id: this.generateId(),
+      name: this.sanitizeInput(site.name),
+      url: this.sanitizeUrl(site.url),
+      icon: site.icon || this.generateFaviconUrl(site.url),
+    };
+    this.links.push(link);
+    const entry = { type: 'link', id: link.id };
+    const idxIns = Number.isInteger(insertIndex)
+      ? Math.max(0, Math.min(insertIndex, this.rootOrder.length))
+      : this.rootOrder.length;
+    this.rootOrder.splice(idxIns, 0, entry);
+
+    await this.save();
+    return link;
+  }
+
+  /** Move a site between folders */
+  async moveSiteBetweenFolders(sourceFolderId, siteId, targetFolderId) {
+    if (sourceFolderId === targetFolderId) return this.getFolderById(targetFolderId);
+    const source = this.getFolderById(sourceFolderId);
+    const target = this.getFolderById(targetFolderId);
+    if (!source || !target) throw new Error('Folder not found');
+    const idx = source.sites.findIndex(s => s.id === siteId);
+    if (idx === -1) throw new Error('Site not found');
+    const [site] = source.sites.splice(idx, 1);
+    target.sites.push(site);
+    await this.save();
+    return target;
   }
 
   /** Generate a favicon URL from a site URL */

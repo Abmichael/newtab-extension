@@ -150,21 +150,49 @@ class UIManager {
   // ============ Drag and Drop ============
 
   initializeDragDrop() {
-    this.container.addEventListener(
-      "dragstart",
-      this.handleDragStart.bind(this)
-    );
-    this.container.addEventListener("dragover", this.handleDragOver.bind(this));
-    this.container.addEventListener("drop", this.handleDrop.bind(this));
-    this.container.addEventListener("dragend", this.handleDragEnd.bind(this));
-    this.container.addEventListener(
-      "dragenter",
-      this.handleDragEnter.bind(this)
-    );
-    this.container.addEventListener(
-      "dragleave",
-      this.handleDragLeave.bind(this)
-    );
+    // Fresh DnD implementation for mixed folder/link grid
+    // Listen on container for grid items
+    this.container.addEventListener("dragstart", (e) => this.onDragStart(e));
+    
+    // Global listeners to handle drops from popovers to main grid
+    let lastOver = 0;
+    
+    const handleGlobalDragOver = (e) => {
+      // Allow dropping on the main content area (broader than just the container)
+      const mainContent = document.querySelector('.main-content');
+      const isDropZone = mainContent && (
+        mainContent.contains(e.target) || 
+        this.container.contains(e.target) || 
+        e.target === this.container ||
+        e.target === mainContent
+      );
+      
+      if (!isDropZone) return;
+      
+      const now = performance.now();
+      if (now - lastOver < 16) { e.preventDefault(); return; }
+      lastOver = now;
+      this.onDragOver(e);
+    };
+    
+    const handleGlobalDrop = (e) => {
+      // Allow dropping on the main content area (broader than just the container)
+      const mainContent = document.querySelector('.main-content');
+      const isDropZone = mainContent && (
+        mainContent.contains(e.target) || 
+        this.container.contains(e.target) || 
+        e.target === this.container ||
+        e.target === mainContent
+      );
+      
+      if (!isDropZone) return;
+      this.onDrop(e);
+    };
+    
+    document.addEventListener("dragover", handleGlobalDragOver);
+    document.addEventListener("drop", handleGlobalDrop);
+    
+    document.addEventListener("dragend", (e) => this.onDragEnd(e));
 
     // Global click handler to close context menus
     document.addEventListener("click", this.closeContextMenu.bind(this));
@@ -256,29 +284,46 @@ class UIManager {
     );
   }
 
-  handleDragStart(event) {
-    const item = event.target.closest(".folder-item");
-    if (!item) return;
-
-    this.draggedElement = item;
-    event.dataTransfer.setData("text/plain", item.dataset.folderId);
-    event.dataTransfer.effectAllowed = "move";
-
-    item.classList.add("dragging");
-    item.style.opacity = "0.5";
+  onDragStart(event) {
+    const folderTile = event.target.closest(".folder-item");
+    const linkTile = event.target.closest(".link-item");
+    if (!folderTile && !linkTile) return;
+    const payload = folderTile
+      ? { type: 'folder', id: folderTile.dataset.folderId }
+      : { type: 'link', id: linkTile.dataset.linkId };
+    event.dataTransfer.setData('application/json', JSON.stringify(payload));
+    event.dataTransfer.effectAllowed = 'move';
+    this.draggedElement = folderTile || linkTile;
+    (folderTile || linkTile).classList.add('dragging');
   }
 
-  handleDragOver(event) {
+  onDragOver(event) {
     event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
+    event.dataTransfer.dropEffect = 'move';
+    const targetFolder = event.target.closest('.folder-item');
+    const targetLink = event.target.closest('.link-item');
+    const tiles = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
 
-    const afterElement = this.getDragAfterElement(event.clientY);
-    const dropIndicator = this.getOrCreateDropIndicator();
-
-    if (afterElement == null) {
-      this.container.appendChild(dropIndicator);
+    // Decide mode: hover-target vs reorder indicator. Prefer hover highlight when directly over a tile.
+    this.clearHoverStates();
+    const overFolder = targetFolder;
+    const overLink = targetLink;
+    if (overFolder || overLink) {
+      // Show hover highlight only, hide drop indicator to avoid confusion
+      this.removeDropIndicator();
+      if (overFolder) overFolder.classList.add('dnd-over-folder');
+      if (overLink) overLink.classList.add('dnd-over-link');
     } else {
-      this.container.insertBefore(dropIndicator, afterElement);
+      // Show drop indicator at nearest insertion slot
+      const point = { x: event.clientX, y: event.clientY };
+      const index = this.findInsertIndex(tiles, point);
+      const indicator = this.getOrCreateDropIndicator();
+      const refNode = tiles[index] || null;
+      if (refNode) {
+        this.container.insertBefore(indicator, refNode);
+      } else {
+        this.container.appendChild(indicator);
+      }
     }
   }
 
@@ -292,68 +337,92 @@ class UIManager {
     }
   }
 
-  handleDrop(event) {
+  async onDrop(event) {
     event.preventDefault();
-    const folderId = event.dataTransfer.getData("text/plain");
+    const data = event.dataTransfer.getData('application/json');
+    if (!data) { this.cleanupDnD(); return; }
+    let payload; try { payload = JSON.parse(data); } catch { this.cleanupDnD(); return; }
 
-    if (this.draggedElement && folderId) {
-      try {
-        const afterElement = this.getDragAfterElement(event.clientY);
-        const allFolders = Array.from(
-          this.container.querySelectorAll(".folder-item:not(.dragging)")
-        );
+    const dropFolder = event.target.closest('.folder-item');
+    const dropLink = event.target.closest('.link-item');
+    const tiles = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
+    const index = this.findInsertIndex(tiles, { x: event.clientX, y: event.clientY });
+    const dropRef = tiles[index] || null;
 
-        let newIndex = allFolders.length;
-        if (afterElement) {
-          newIndex = allFolders.indexOf(afterElement);
+    try {
+      if (payload.type === 'site') {
+        if (dropFolder) {
+          await this.folderSystem.moveSiteBetweenFolders(payload.folderId, payload.id, dropFolder.dataset.folderId);
+        } else if (dropLink) {
+          const targetId = dropLink.dataset.linkId;
+          const targetIndex = tiles.indexOf(dropLink);
+          const insertIdx = targetIndex >= 0 ? targetIndex : index;
+          const tempLink = await this.folderSystem.moveSiteToRoot(payload.folderId, payload.id, insertIdx);
+          await this.folderSystem.createFolderFromRootLinks([tempLink.id, targetId], undefined, insertIdx);
+        } else {
+          await this.folderSystem.moveSiteToRoot(payload.folderId, payload.id, index);
         }
-
-        // Update folder order in the system
-        this.folderSystem.reorderFolder(folderId, newIndex);
-
-        // Re-render folders to reflect new order
-        const folders = this.folderSystem.getAllFolders();
-        this.renderFolders(folders);
-      } catch (error) {
-        console.error("Error during folder reorder:", error);
-        // Reset drag state on error
-        if (this.draggedElement) {
-          this.draggedElement.classList.remove("dragging");
-          this.draggedElement.style.opacity = "";
+        // Close popover to avoid stale view
+        this.closeFolderPopover?.();
+      } else if (dropFolder) {
+        // If dropping onto a folder tile surface
+        if (payload.type === 'link') {
+          // Move link into folder
+          await this.folderSystem.moveLinkToFolder(payload.id, dropFolder.dataset.folderId);
+        } else if (payload.type === 'folder') {
+          // Merge folders
+          await this.folderSystem.mergeFolders(payload.id, dropFolder.dataset.folderId);
         }
+      } else if (dropLink && payload.type === 'link' && dropLink.dataset.linkId !== payload.id) {
+        // Link onto link: create a folder with both links at the target position
+        const targetId = dropLink.dataset.linkId;
+        // Determine insertion index at position of target link
+        const targetIndex = tiles.indexOf(dropLink);
+        const insertIdx = targetIndex >= 0 ? targetIndex : index;
+        await this.folderSystem.createFolderFromRootLinks([payload.id, targetId], undefined, insertIdx);
+      } else {
+        // Reorder in root grid relative to index
+        const newIndex = index; // this index points to before the ref node
+        await this.folderSystem.reorderRootItem(payload.type, payload.id, newIndex);
       }
+    } catch (err) {
+      console.error('DnD drop failed:', err);
     }
 
-    this.removeDropIndicator();
+    this.cleanupDnD();
+    this.refreshFolders();
   }
 
-  handleDragEnd(event) {
+  onDragEnd(event) { this.cleanupDnD(); }
+
+  cleanupDnD() {
     if (this.draggedElement) {
-      this.draggedElement.classList.remove("dragging");
-      this.draggedElement.style.opacity = "";
+      this.draggedElement.classList.remove('dragging');
       this.draggedElement = null;
     }
+    this.clearHoverStates();
     this.removeDropIndicator();
   }
 
-  getDragAfterElement(y) {
-    const draggableElements = [
-      ...this.container.querySelectorAll(".folder-item:not(.dragging)"),
-    ];
+  clearHoverStates() {
+  this.container.querySelectorAll('.dnd-over-folder').forEach(el => el.classList.remove('dnd-over-folder'));
+  this.container.querySelectorAll('.dnd-over-link').forEach(el => el.classList.remove('dnd-over-link'));
+  }
 
-    return draggableElements.reduce(
-      (closest, child) => {
-        const box = child.getBoundingClientRect();
-        const offset = y - box.top - box.height / 2;
-
-        if (offset < 0 && offset > closest.offset) {
-          return { offset: offset, element: child };
-        } else {
-          return closest;
-        }
-      },
-      { offset: Number.NEGATIVE_INFINITY }
-    ).element;
+  // Determine insertion index by closest x/y position among tiles
+  findInsertIndex(tiles, point) {
+    if (!tiles.length) return 0;
+    let bestIdx = tiles.length; let bestDist = Infinity;
+    tiles.forEach((tile, idx) => {
+      const r = tile.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const dx = point.x - cx; const dy = point.y - cy;
+      const d = dx*dx + dy*dy;
+      if (d < bestDist) { bestDist = d; bestIdx = idx; }
+    });
+    // Insert before the closest tile
+    return bestIdx;
   }
 
   getOrCreateDropIndicator() {
@@ -395,6 +464,9 @@ class UIManager {
           : `
         <div class="context-item" data-action="add-folder">
           <span>Add Folder</span>
+        </div>
+        <div class="context-item" data-action="add-link">
+          <span>Add Link</span>
         </div>
       `
       }
@@ -442,6 +514,9 @@ class UIManager {
       switch (action) {
         case "add-folder":
           this.showAddFolderDialog();
+          break;
+        case "add-link":
+          this.showAddLinkDialog();
           break;
         case "edit":
           if (folderId) this.showEditFolderDialog(folderId);
@@ -624,6 +699,62 @@ class UIManager {
     });
   }
 
+  showAddLinkDialog() {
+    const dialog = this.createDialog(
+      "Add Link",
+      `
+      <div class="dialog-field">
+        <label for="link-name">Name</label>
+        <input type="text" id="link-name" placeholder="Enter name" />
+      </div>
+      <div class="dialog-field">
+        <label for="link-url">URL</label>
+        <input type="url" id="link-url" placeholder="https://example.com" />
+      </div>
+      <div class="dialog-field">
+        <label for="link-location">Location</label>
+        <select id="link-location">
+          <option value="root" selected>Home grid</option>
+          ${this.folderSystem
+            .getAllFolders()
+            .map((f) => `<option value="folder:${f.id}">Folder: ${f.name}</option>`) 
+            .join('')}
+        </select>
+      </div>
+    `,
+      [
+        { text: "Cancel", action: "cancel" },
+        { text: "Add", action: "add", primary: true },
+      ]
+    );
+
+    dialog.addEventListener("action", async (e) => {
+      if (e.detail.action === "add") {
+        const name = dialog.querySelector("#link-name").value.trim();
+        const url = dialog.querySelector("#link-url").value.trim();
+        const loc = dialog.querySelector("#link-location").value;
+        if (!name || !url) {
+          alert("Please enter both name and URL.");
+          return;
+        }
+        try {
+          if (loc === 'root') {
+            await this.folderSystem.addRootLink({ name, url });
+          } else if (loc.startsWith('folder:')) {
+            const folderId = loc.slice('folder:'.length);
+            await this.folderSystem.addSiteToFolder(folderId, { name, url });
+          }
+          this.refreshFolders();
+        } catch (err) {
+          console.error('Failed to add link:', err);
+          alert('Failed to add link. Please check the URL and try again.');
+          return;
+        }
+      }
+      this.closeDialog();
+    });
+  }
+
   createDialog(title, content, buttons) {
     const overlay = document.createElement("div");
     overlay.className = "dialog-overlay";
@@ -713,7 +844,8 @@ class UIManager {
 
   refreshFolders() {
     const folders = this.folderSystem.getAllFolders();
-    this.renderFolders(folders);
+  const links = this.folderSystem.getAllLinks?.() || [];
+  this.renderGrid(folders, links);
   }
 
   // ============ Rendering ============
@@ -723,12 +855,38 @@ class UIManager {
   }
 
   renderFolders(folders) {
+    // Backward-compat method kept; delegates to renderGrid which includes links
+    this.renderGrid(folders, this.folderSystem.getAllLinks?.() || []);
+  }
+
+  renderGrid(folders, links) {
     this.clearContainer();
-    folders.forEach((folder) => {
-      const el = this.createFolderElement(folder);
-      this.container.appendChild(el);
-    });
-    // Do not auto-focus to avoid showing outlines on initial load
+    const items = this.folderSystem.getRootItems?.();
+    if (Array.isArray(items) && items.length) {
+      items.forEach(({ type, item }) => {
+        const el = type === 'link' ? this.createLinkTile(item) : this.createFolderElement(item);
+        this.container.appendChild(el);
+      });
+    } else {
+      // Fallback if ordering not available
+      (links || []).forEach((link) => this.container.appendChild(this.createLinkTile(link)));
+      (folders || []).forEach((folder) => this.container.appendChild(this.createFolderElement(folder)));
+    }
+    // Add-tile at the end
+    this.container.appendChild(this.createAddTile());
+  }
+
+  createAddTile() {
+    const add = document.createElement('div');
+    add.className = 'add-tile';
+    add.setAttribute('tabindex', '0');
+    add.setAttribute('role', 'button');
+  add.setAttribute('aria-label', 'Add link');
+    add.draggable = false;
+    add.innerHTML = '<span aria-hidden="true">+</span><div class="add-label">Add</div>';
+    add.addEventListener('click', () => this.showAddLinkDialog());
+    add.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.showAddLinkDialog(); } });
+    return add;
   }
 
   createFolderElement(folder) {
@@ -750,14 +908,12 @@ class UIManager {
       button.style.background = this.computeFolderBg(folder.color);
 
     const preview = this.createFolderPreview(folder.sites || []);
-    button.appendChild(preview);
-
-    // button contains the 2x2 grid already; preview returns a fragment-like div
+    // Move preview slots into the button without appending the temporary wrapper
     while (preview.firstChild) {
       button.appendChild(preview.firstChild);
     }
 
-    const title = this.createFolderTitle(folder.name || "Folder");
+    const title = this.createFolderTitle(folder.name || "Folder", folder.id);
 
     item.appendChild(button);
     item.appendChild(title);
@@ -784,21 +940,53 @@ class UIManager {
         img.alt = previews[i].name || "Site";
         this.attachFaviconErrorHandler(img, url);
         slot.appendChild(img);
-      } else {
-        // empty slot visual
-        slot.style.opacity = "0.6";
-      }
+  }
       wrapper.appendChild(slot);
     }
     return wrapper;
   }
 
-  createFolderTitle(text) {
+  createFolderTitle(text, id) {
     const title = document.createElement("div");
     title.className = "folder-title";
     title.textContent = text;
-    title.id = `folder-title-${text.replace(/\s+/g, "-").toLowerCase()}`;
+    title.id = `folder-title-${id || text.replace(/\s+/g, "-").toLowerCase()}`;
     return title;
+  }
+
+  createLinkTile(link) {
+  // Wrapper with inner square button and label outside (like folder tiles)
+  const wrapper = document.createElement('div');
+  wrapper.className = 'link-item';
+  wrapper.dataset.linkId = link.id;
+  wrapper.setAttribute('draggable', 'true');
+
+  const button = document.createElement('a');
+  button.className = 'link-button';
+  button.href = link.url;
+  button.target = '_blank';
+  button.rel = 'noopener noreferrer';
+  button.setAttribute('title', link.name || link.url);
+
+  const img = document.createElement('img');
+  const favicon = link.icon || this.folderSystem.generateFaviconUrl(link.url);
+  img.src = favicon;
+  img.loading = 'lazy';
+  img.alt = link.name || 'Link';
+  this.attachFaviconErrorHandler(img, link.url);
+  button.appendChild(img);
+
+  const label = document.createElement('div');
+  label.className = 'link-title';
+  label.textContent = link.name || link.url;
+
+  wrapper.appendChild(button);
+  wrapper.appendChild(label);
+
+  // Try to upgrade to a higher resolution icon via the background service worker
+  this.upgradeIconQuality(img, link.url).catch(() => {});
+
+  return wrapper;
   }
 
   // ============ Modal / Overlay ============
@@ -862,46 +1050,31 @@ class UIManager {
     grid.className = "site-grid";
 
     (folder.sites || []).forEach((site) => {
-      const tile = document.createElement("a");
-      tile.className = "site-tile";
-      tile.href = site.url;
-      tile.target = "_blank";
-      tile.rel = "noopener noreferrer";
-      tile.setAttribute("title", site.name || site.url);
+      const item = document.createElement('div');
+      item.className = 'link-item';
+      item.style.cursor = 'pointer';
+      item.setAttribute('title', site.name || site.url);
+      item.addEventListener('click', () => window.open(site.url, '_blank', 'noopener,noreferrer'));
 
-      const iconWrap = document.createElement("div");
-      iconWrap.style.width = "28px";
-      iconWrap.style.height = "28px";
-      iconWrap.style.marginRight = "10px";
-      iconWrap.style.display = "flex";
-      iconWrap.style.alignItems = "center";
-      iconWrap.style.justifyContent = "center";
-      iconWrap.style.borderRadius = "6px";
-      iconWrap.style.background = "rgba(255,255,255,0.12)";
-
-      const img = document.createElement("img");
-      const favicon =
-        site.icon || this.folderSystem.generateFaviconUrl(site.url);
+      const iconWrap = document.createElement('div');
+      iconWrap.className = 'link-icon';
+      const img = document.createElement('img');
+      const favicon = site.icon || this.folderSystem.generateFaviconUrl(site.url);
       img.src = favicon;
-      img.loading = "lazy";
-      img.alt = site.name || "Site";
-      img.width = 20;
-      img.height = 20;
+      img.loading = 'lazy';
+      img.alt = site.name || 'Site';
       this.attachFaviconErrorHandler(img, site.url);
       iconWrap.appendChild(img);
 
-      const label = document.createElement("span");
+      const label = document.createElement('div');
+      label.className = 'link-title';
       label.textContent = site.name || site.url;
-      label.style.marginLeft = "4px";
 
-      tile.style.display = "flex";
-      tile.style.alignItems = "center";
-      tile.style.padding = "10px";
+      item.appendChild(iconWrap);
+      item.appendChild(label);
+      this.upgradeIconQuality(img, site.url).catch(() => {});
 
-      tile.appendChild(iconWrap);
-      tile.appendChild(label);
-
-      grid.appendChild(tile);
+      grid.appendChild(item);
     });
 
     modal.appendChild(header);
@@ -927,13 +1100,51 @@ class UIManager {
     const grid = document.createElement("div");
     grid.className = "site-grid";
     (folder.sites || []).forEach((site) => {
-      const tile = document.createElement("a");
-      tile.className = "site-tile";
-      tile.href = site.url;
-      tile.target = "_blank";
-      tile.rel = "noopener noreferrer";
-      tile.textContent = site.name || site.url;
-      grid.appendChild(tile);
+      // Use same visual structure as root grid link tiles
+      const wrapper = document.createElement('div');
+      wrapper.className = 'link-item popover-site';
+      wrapper.setAttribute('draggable', 'true');
+      wrapper.dataset.folderId = folder.id;
+      wrapper.dataset.siteId = site.id;
+
+      const button = document.createElement('a');
+      button.className = 'link-button';
+      button.href = site.url;
+      button.target = '_blank';
+      button.rel = 'noopener,noreferrer';
+      button.setAttribute('title', site.name || site.url);
+
+      const img = document.createElement('img');
+      const favicon = site.icon || this.folderSystem.generateFaviconUrl(site.url);
+      img.src = favicon;
+      img.loading = 'lazy';
+      img.alt = site.name || 'Site';
+      this.attachFaviconErrorHandler(img, site.url);
+      button.appendChild(img);
+
+      const label = document.createElement('div');
+      label.className = 'link-title';
+      label.textContent = site.name || site.url;
+
+      // Try to upgrade image quality
+      this.upgradeIconQuality(img, site.url).catch(() => {});
+
+      // DnD payload from popover
+      wrapper.addEventListener('dragstart', (e) => {
+        const payload = { type: 'site', folderId: folder.id, id: site.id };
+        e.dataTransfer.setData('application/json', JSON.stringify(payload));
+        e.dataTransfer.effectAllowed = 'move';
+        wrapper.classList.add('dragging');
+        this.draggedElement = wrapper;
+      });
+      wrapper.addEventListener('dragend', () => {
+        wrapper.classList.remove('dragging');
+        if (this.draggedElement === wrapper) this.draggedElement = null;
+      });
+
+      wrapper.appendChild(button);
+      wrapper.appendChild(label);
+      grid.appendChild(wrapper);
     });
 
     pop.appendChild(grid);
@@ -1049,15 +1260,49 @@ class UIManager {
     const onEsc = (e) => {
       if (e.key === "Escape") this.closeFolderPopover();
     };
+    
+    // Drag and drop support for backdrop - allow events to pass through
+    const onBackdropDragOver = (e) => {
+      e.preventDefault();
+      // Forward the event to the main grid by temporarily hiding backdrop
+      backdrop.style.pointerEvents = 'none';
+      const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+      backdrop.style.pointerEvents = '';
+      
+      // If we're over the main content area, handle the drag over
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent && (mainContent.contains(elementBelow) || this.container.contains(elementBelow))) {
+        this.onDragOver(e);
+      }
+    };
+    
+    const onBackdropDrop = (e) => {
+      e.preventDefault();
+      // Forward the event to the main grid by temporarily hiding backdrop
+      backdrop.style.pointerEvents = 'none';
+      const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
+      backdrop.style.pointerEvents = '';
+      
+      // If we're over the main content area, handle the drop
+      const mainContent = document.querySelector('.main-content');
+      if (mainContent && (mainContent.contains(elementBelow) || this.container.contains(elementBelow))) {
+        this.onDrop(e);
+      }
+    };
+    
     // Attach listeners after next tick to avoid immediate close from the opening click
     setTimeout(() => {
       backdrop.addEventListener("click", onBackdropClick);
+      backdrop.addEventListener("dragover", onBackdropDragOver);
+      backdrop.addEventListener("drop", onBackdropDrop);
       document.addEventListener("keydown", onEsc);
     }, 0);
 
     // Track resources for cleanup and toggle support
     pop._cleanup = () => {
       backdrop.removeEventListener("click", onBackdropClick);
+      backdrop.removeEventListener("dragover", onBackdropDragOver);
+      backdrop.removeEventListener("drop", onBackdropDrop);
       document.removeEventListener("keydown", onEsc);
     };
   pop._backdrop = backdrop;
@@ -1082,29 +1327,81 @@ class UIManager {
 
   attachFaviconErrorHandler(img, url) {
     const originKey = this.safeOrigin(url);
-    img.addEventListener("error", () => {
-      if (this.faviconFail.has(originKey)) {
-        img.src = this.defaultFaviconDataUri();
-        return;
+    let triedChromeAlt = false;
+    let triedDDG = false;
+    let finalized = false;
+    const onError = () => {
+      if (finalized) return;
+      // 1) Try chrome://favicon/<origin> once if not already that src
+      if (!triedChromeAlt) {
+        triedChromeAlt = true;
+        try {
+          const origin = new URL(url).origin;
+          const alt = `chrome://favicon/${origin}`;
+          if (img.src !== alt) {
+            img.src = alt;
+            return;
+          }
+        } catch (_) { /* ignore */ }
       }
-      // Try chrome://favicon on origin, then fallback
-      try {
-        const origin = new URL(url).origin;
-        const alt = `chrome://favicon/${origin}`;
-        if (img.src !== alt) {
-          img.src = alt;
-          this.faviconFail.add(originKey);
-          return;
-        }
-      } catch (_) {
-        // ignore
+      // 2) Try DuckDuckGo icon service once
+      if (!triedDDG) {
+        triedDDG = true;
+        try {
+          const host = new URL(url).hostname;
+          const ddg = `https://icons.duckduckgo.com/ip3/${host}.ico`;
+          if (img.src !== ddg) {
+            img.src = ddg;
+            return;
+          }
+        } catch (_) { /* ignore */ }
       }
+      // 3) Final fallback: static data URI
+      finalized = true;
+      img.removeEventListener('error', onError);
       img.src = this.defaultFaviconDataUri();
-    });
+    };
+    img.addEventListener('error', onError);
 
     img.addEventListener("load", () => {
       this.faviconOk.add(originKey);
     });
+  }
+
+  /**
+   * Ask the extension background service worker to fetch a higher-res icon/thumbnail
+   * for the given site URL. If a better image URL is returned, swap the img src.
+   */
+  async upgradeIconQuality(imgEl, siteUrl) {
+    try {
+      if (!window.chrome?.runtime?.sendMessage) return;
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 2500);
+      const response = await new Promise((resolve, reject) => {
+        try {
+          chrome.runtime.sendMessage(
+            { action: 'fetchHighResIcon', url: siteUrl },
+            (res) => {
+              const err = chrome.runtime.lastError;
+              if (err) return reject(err);
+              resolve(res);
+            }
+          );
+        } catch (e) {
+          reject(e);
+        }
+      });
+      clearTimeout(timeout);
+      if (response && response.success && response.imageUrl && typeof response.imageUrl === 'string') {
+        // Only swap if it looks like a better asset (png/jpg/webp) or bigger than favicon
+        const looksBetter = /\.(png|jpg|jpeg|webp)(\?|$)/i.test(response.imageUrl) || !/^chrome:\/\//.test(response.imageUrl);
+        if (looksBetter) {
+          imgEl.src = response.imageUrl;
+        }
+      }
+    } catch (_) {
+      // ignore upgrade failures silently
+    }
   }
 
   safeOrigin(url) {

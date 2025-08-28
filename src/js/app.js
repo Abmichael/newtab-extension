@@ -11,7 +11,7 @@ class NeoTabApp {
 
   async init() {
     // Initialize performance monitoring
-    if (typeof PerformanceMonitor !== 'undefined') {
+    if (typeof PerformanceMonitor !== "undefined") {
       this.performanceMonitor = new PerformanceMonitor();
     }
 
@@ -29,7 +29,7 @@ class NeoTabApp {
     const overlay = document.getElementById("folder-overlay");
     if (grid && overlay) {
       this.ui = new UIManager(grid, overlay, this.folderSystem);
-      this.ui.renderFolders(this.data.folders);
+      this.ui.renderGrid(this.data.folders, this.data.links || []);
     }
 
     // Update clock every second (the settings manager also has its own clock)
@@ -44,9 +44,9 @@ class NeoTabApp {
     } catch (error) {
       if (window.errorHandler) {
         window.errorHandler.handleError({
-          type: 'initialization',
+          type: "initialization",
           message: error.message,
-          stack: error.stack
+          stack: error.stack,
         });
       }
       // Use default data if loading fails
@@ -58,8 +58,8 @@ class NeoTabApp {
     const clockElement = document.getElementById("clock");
     if (clockElement) {
       const now = new Date();
-      const hour12 = this?.data?.settings?.clockFormat === '12h' || true;
-      const opts = { hour: '2-digit', minute: '2-digit', hour12 };
+      const hour12 = (this?.data?.settings?.clockFormat || "12h") === "12h";
+      const opts = { hour: "2-digit", minute: "2-digit", hour12 };
       let timeString = now.toLocaleTimeString([], opts);
       // Ensure lowercase am/pm if present
       timeString = timeString.replace(/AM|PM/, (m) => m.toLowerCase());
@@ -72,7 +72,7 @@ class NeoTabApp {
     const addButton = document.getElementById("add-button");
     if (addButton) {
       addButton.addEventListener("click", () => {
-        this.handleAddFolder();
+        this.ui?.showAddFolderDialog?.();
       });
     }
 
@@ -116,13 +116,13 @@ class NeoTabApp {
         // Keep local reference in sync
         this.data = this.folderSystem.data;
         // Re-render UI if available
-        this.ui?.renderFolders(this.data.folders);
+        this.ui?.renderGrid(this.data.folders, this.data.links || []);
       } catch (e) {
         if (window.errorHandler) {
           window.errorHandler.handleError({
-            type: 'folder_creation',
+            type: "folder_creation",
             message: e.message,
-            stack: e.stack
+            stack: e.stack,
           });
         }
       }
@@ -140,8 +140,8 @@ class NeoTabApp {
       } else {
         if (window.errorHandler) {
           window.errorHandler.handleError({
-            type: 'settings_save',
-            message: 'Failed to save settings to storage'
+            type: "settings_save",
+            message: "Failed to save settings to storage",
           });
         }
         return false;
@@ -149,9 +149,9 @@ class NeoTabApp {
     } catch (error) {
       if (window.errorHandler) {
         window.errorHandler.handleError({
-          type: 'settings_save',
+          type: "settings_save",
           message: error.message,
-          stack: error.stack
+          stack: error.stack,
         });
       }
       return false;
@@ -166,8 +166,8 @@ class NeoTabApp {
       window.__neotabApp = new NeoTabApp();
     }
   };
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start, { once: true });
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
   } else {
     start();
   }

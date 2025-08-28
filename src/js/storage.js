@@ -3,7 +3,9 @@ class StorageManager {
   constructor() {
     this.storageKey = 'neotab_data';
     this.defaultData = {
-      folders: [],
+  folders: [],
+  links: [],
+  rootOrder: [],
       settings: {
         gridSize: 4,
         theme: 'dark',
@@ -114,7 +116,12 @@ class StorageManager {
         return false;
       }
 
-      if (!data.settings || typeof data.settings !== 'object') {
+      // links is optional but if present must be an array
+      if (data.links !== undefined && !Array.isArray(data.links)) {
+        return false;
+      }
+
+  if (!data.settings || typeof data.settings !== 'object') {
         return false;
       }
 
@@ -142,7 +149,7 @@ class StorageManager {
         }
       }
 
-      // Validate folders structure
+  // Validate folders structure
       for (const folder of data.folders) {
         if (!folder.id || !folder.name || !Array.isArray(folder.sites)) {
           return false;
@@ -152,6 +159,26 @@ class StorageManager {
           if (!site.id || !site.name || !site.url) {
             return false;
           }
+        }
+      }
+
+      // Validate root links if present
+      if (Array.isArray(data.links)) {
+        for (const link of data.links) {
+          if (!link.id || !link.name || !link.url) {
+            return false;
+          }
+        }
+      }
+
+      // Validate rootOrder if present
+      if (data.rootOrder !== undefined) {
+        if (!Array.isArray(data.rootOrder)) return false;
+        for (const entry of data.rootOrder) {
+          if (!entry || typeof entry !== 'object') return false;
+          if (!('type' in entry) || !('id' in entry)) return false;
+          if (entry.type !== 'folder' && entry.type !== 'link') return false;
+          if (typeof entry.id !== 'string') return false;
         }
       }
 
@@ -172,7 +199,7 @@ class StorageManager {
       // Deep clone to avoid modifying original
       const sanitized = JSON.parse(JSON.stringify(data));
 
-      // Sanitize folder names and site data
+  // Sanitize folder names and site data
       if (sanitized.folders) {
         sanitized.folders.forEach(folder => {
           if (folder.name) {
@@ -190,6 +217,27 @@ class StorageManager {
             });
           }
         });
+      }
+
+      // Sanitize root links
+      if (sanitized.links) {
+        sanitized.links.forEach(link => {
+          if (link.name) {
+            link.name = this.escapeHtml(link.name);
+          }
+          if (link.url) {
+            link.url = this.sanitizeUrl(link.url);
+          }
+        });
+      }
+
+      // Clean rootOrder: remove entries whose targets no longer exist
+      if (Array.isArray(sanitized.rootOrder)) {
+        const folderIds = new Set((sanitized.folders || []).map(f => f.id));
+        const linkIds = new Set((sanitized.links || []).map(l => l.id));
+        sanitized.rootOrder = sanitized.rootOrder.filter(e =>
+          e && ((e.type === 'folder' && folderIds.has(e.id)) || (e.type === 'link' && linkIds.has(e.id)))
+        );
       }
 
       return sanitized;
@@ -217,7 +265,16 @@ class StorageManager {
       const currentVersion = '1.0';
       
       if (data.version === currentVersion) {
-        return data;
+        // Ensure new optional fields exist
+        const withLinks = Array.isArray(data.links) ? data.links : [];
+        let rootOrder = Array.isArray(data.rootOrder) ? data.rootOrder : null;
+        if (!rootOrder) {
+          rootOrder = [
+            ...withLinks.map(l => ({ type: 'link', id: l.id })),
+            ...(Array.isArray(data.folders) ? data.folders.map(f => ({ type: 'folder', id: f.id })) : []),
+          ];
+        }
+        return { ...data, links: withLinks, rootOrder };
       }
 
       console.log(`Migrating data from version ${data.version} to ${currentVersion}`);
@@ -231,6 +288,19 @@ class StorageManager {
         ...this.defaultData.settings,
         ...migratedData.settings
       };
+
+      // Ensure links exists
+      if (!Array.isArray(migratedData.links)) {
+        migratedData.links = [];
+      }
+
+      // Ensure rootOrder exists
+      if (!Array.isArray(migratedData.rootOrder)) {
+        migratedData.rootOrder = [
+          ...migratedData.links.map(l => ({ type: 'link', id: l.id })),
+          ...migratedData.folders.map(f => ({ type: 'folder', id: f.id })),
+        ];
+      }
 
       return migratedData;
     } catch (error) {
