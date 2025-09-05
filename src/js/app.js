@@ -24,6 +24,24 @@ class NeoTabApp {
     this.updateClock();
     this.setupEventListeners();
 
+    // Seed from topSites on first launch if empty, then periodic refresh
+    try {
+      await this.folderSystem.maybeSeedFromTopSites?.(12);
+      // Run a periodic refresh after startup without blocking UI
+      setTimeout(async () => {
+        const changed = await this.folderSystem.periodicTopSitesRefresh?.({ intervalHours: 24, cap: 24 });
+        if (changed && this.ui) {
+          const items = this.folderSystem.getRootItems?.();
+          const grid = document.getElementById("folder-grid");
+          const overlay = document.getElementById("folder-overlay");
+          if (!this.ui && grid && overlay) {
+            this.ui = new UIManager(grid, overlay, this.folderSystem);
+          }
+          this.ui?.renderGrid?.(this.folderSystem.getAllFolders?.() || [], this.folderSystem.getAllLinks?.() || []);
+        }
+      }, 100);
+    } catch (_) { /* ignore */ }
+
     // Initialize UI after data is ready
     const grid = document.getElementById("folder-grid");
     const overlay = document.getElementById("folder-overlay");

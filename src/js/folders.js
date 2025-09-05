@@ -31,6 +31,8 @@ class FolderSystem {
           ...this.links.map(l => ({ type: 'link', id: l.id })),
           ...this.folders.map(f => ({ type: 'folder', id: f.id })),
         ]);
+  // Ensure meta block exists
+  if (!this.data.meta) this.data.meta = { lastTopSitesSync: 0, topSitesSeeded: false };
     return this.folders;
   }
 
@@ -40,6 +42,91 @@ class FolderSystem {
   this.data.links = this.links;
   this.data.rootOrder = this.rootOrder;
     return await this.storage.saveData(this.data);
+  }
+
+  // =============== Top Sites Integration (Chrome) ===============
+  /**
+   * Fetch Chrome top sites (permission required)
+   * @returns {Promise<Array<{title:string,url:string}>>}
+   */
+  async fetchTopSites() {
+    return new Promise((resolve) => {
+      if (typeof chrome === 'undefined' || !chrome.topSites || !chrome.topSites.get) {
+        resolve([]);
+        return;
+      }
+      try {
+        chrome.topSites.get((sites) => {
+          resolve(Array.isArray(sites) ? sites : []);
+        });
+      } catch (_) {
+        resolve([]);
+      }
+    });
+  }
+
+  /**
+   * Seed root grid with top sites if first run and grid is empty
+   */
+  async maybeSeedFromTopSites(maxLinks = 12) {
+    try {
+      if (this.data.meta?.topSitesSeeded) return false;
+      const isEmpty = (this.links.length === 0) && (this.folders.length === 0);
+      if (!isEmpty) {
+        this.data.meta.topSitesSeeded = true;
+        await this.save();
+        return false;
+      }
+      const sites = await this.fetchTopSites();
+      if (!sites.length) {
+        this.data.meta.topSitesSeeded = true;
+        await this.save();
+        return false;
+      }
+      const picked = sites.slice(0, maxLinks);
+      for (const s of picked) {
+        await this.addRootLink({ name: s.title || s.url, url: s.url });
+      }
+      this.data.meta.topSitesSeeded = true;
+      this.data.meta.lastTopSitesSync = Date.now();
+      await this.save();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Periodically sync in a lightweight way: add missing top sites up to a cap.
+   */
+  async periodicTopSitesRefresh(options = { intervalHours: 24, cap: 24 }) {
+    try {
+      const now = Date.now();
+      const last = this.data.meta?.lastTopSitesSync || 0;
+      const intervalMs = (options.intervalHours || 24) * 3600 * 1000;
+      if (now - last < intervalMs) return false;
+      const sites = await this.fetchTopSites();
+      if (!sites.length) return false;
+      // Deduplicate by hostname; keep existing if present
+      const existingHosts = new Set(this.links.map(l => {
+        try { return new URL(l.url).hostname; } catch { return l.url; }
+      }));
+      let added = 0;
+      for (const s of sites) {
+        if (added >= (options.cap || 24)) break;
+        let host;
+        try { host = new URL(s.url).hostname; } catch { host = s.url; }
+        if (existingHosts.has(host)) continue;
+        await this.addRootLink({ name: s.title || host, url: s.url });
+        existingHosts.add(host);
+        added++;
+      }
+      this.data.meta.lastTopSitesSync = now;
+      await this.save();
+      return added > 0;
+    } catch (_) {
+      return false;
+    }
   }
 
   /** Generate unique ID */

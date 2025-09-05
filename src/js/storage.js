@@ -6,6 +6,10 @@ class StorageManager {
   folders: [],
   links: [],
   rootOrder: [],
+      meta: {
+        lastTopSitesSync: 0,
+        topSitesSeeded: false
+      },
       settings: {
         gridSize: 4,
         theme: 'dark',
@@ -126,6 +130,11 @@ class StorageManager {
       }
 
       if (!data.version || typeof data.version !== 'string') {
+        return false;
+      }
+
+      // meta is optional
+      if (data.meta && (typeof data.meta !== 'object' || typeof (data.meta.lastTopSitesSync ?? 0) !== 'number')) {
         return false;
       }
 
@@ -274,13 +283,13 @@ class StorageManager {
             ...(Array.isArray(data.folders) ? data.folders.map(f => ({ type: 'folder', id: f.id })) : []),
           ];
         }
-        return { ...data, links: withLinks, rootOrder };
+  return { ...data, links: withLinks, rootOrder, meta: data.meta || { lastTopSitesSync: 0, topSitesSeeded: false } };
       }
 
       console.log(`Migrating data from version ${data.version} to ${currentVersion}`);
       
       // Add migration logic here for future versions
-      const migratedData = { ...data };
+  const migratedData = { ...data };
       migratedData.version = currentVersion;
 
       // Ensure all required settings exist
@@ -292,6 +301,11 @@ class StorageManager {
       // Ensure links exists
       if (!Array.isArray(migratedData.links)) {
         migratedData.links = [];
+      }
+
+      // Ensure meta exists
+      if (!migratedData.meta || typeof migratedData.meta !== 'object') {
+        migratedData.meta = { lastTopSitesSync: 0, topSitesSeeded: false };
       }
 
       // Ensure rootOrder exists

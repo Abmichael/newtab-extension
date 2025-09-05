@@ -33,6 +33,7 @@ class UIManager {
       tiles: [], // cached during drag
       centers: [], // cached {x,y}
       indicatorIndex: null,
+      originalIndex: null,
       // thresholds in pixels
       moveThreshold: 8, // minimum movement to recompute heavy stuff
       hysteresis: 14, // distance away from current snap before changing index
@@ -64,11 +65,12 @@ class UIManager {
       this.showFolderPopover(folder, button, clickPoint);
     });
 
-    // Right-click context menu
+    // Right-click context menu (supports folders and links)
     this.container.addEventListener("contextmenu", (e) => {
       e.preventDefault();
-      const item = e.target.closest(".folder-item");
-      this.showContextMenu(e, item);
+      const folderItem = e.target.closest(".folder-item");
+      const linkItem = e.target.closest(".link-item");
+      this.showContextMenu(e, folderItem, linkItem);
     });
 
     // Keyboard navigation
@@ -167,49 +169,50 @@ class UIManager {
     // Fresh DnD implementation for mixed folder/link grid
     // Listen on container for grid items
     this.container.addEventListener("dragstart", (e) => this.onDragStart(e));
-    
+
     // Global listeners to handle drops from popovers to main grid
     let lastOver = 0;
-    
+
     const handleGlobalDragOver = (e) => {
       // Allow dropping on the main content area (broader than just the container)
-      const mainContent = document.querySelector('.main-content');
-      const isDropZone = mainContent && (
-        mainContent.contains(e.target) || 
-        this.container.contains(e.target) || 
-        e.target === this.container ||
-        e.target === mainContent
-      );
-      
+      const mainContent = document.querySelector(".main-content");
+      const isDropZone =
+        mainContent &&
+        (mainContent.contains(e.target) ||
+          this.container.contains(e.target) ||
+          e.target === this.container ||
+          e.target === mainContent);
+
       if (!isDropZone) return;
-      
+
       const now = performance.now();
-      if (now - lastOver < 8) { // lightweight throttle; real batching in RAF
+      if (now - lastOver < 8) {
+        // lightweight throttle; real batching in RAF
         e.preventDefault();
         return;
       }
       lastOver = now;
       this.onDragOver(e);
     };
-    
+
     const handleGlobalDrop = (e) => {
       // Allow dropping on the main content area (broader than just the container)
-      const mainContent = document.querySelector('.main-content');
-      const isDropZone = mainContent && (
-        mainContent.contains(e.target) || 
-        this.container.contains(e.target) || 
-        e.target === this.container ||
-        e.target === mainContent
-      );
-      
+      const mainContent = document.querySelector(".main-content");
+      const isDropZone =
+        mainContent &&
+        (mainContent.contains(e.target) ||
+          this.container.contains(e.target) ||
+          e.target === this.container ||
+          e.target === mainContent);
+
       if (!isDropZone) return;
       this.onDrop(e);
     };
-    
+
     document.addEventListener("dragover", handleGlobalDragOver);
     document.addEventListener("drop", handleGlobalDrop);
-    
-  document.addEventListener("dragend", (e) => this.onDragEnd(e));
+
+    document.addEventListener("dragend", (e) => this.onDragEnd(e));
 
     // Global click handler to close context menus
     document.addEventListener("click", this.closeContextMenu.bind(this));
@@ -232,10 +235,11 @@ class UIManager {
         touchStartPos = { x: touch.clientX, y: touch.clientY };
         isDragging = false;
 
-        // Long press for context menu
+        // Long press for context menu (supports folders and links)
         longPressTimer = setTimeout(() => {
-          const item = e.target.closest(".folder-item");
-          if (item && !isDragging) {
+          const folderItem = e.target.closest(".folder-item");
+          const linkItem = e.target.closest(".link-item");
+          if ((folderItem || linkItem) && !isDragging) {
             // Vibrate if supported
             if (navigator.vibrate) {
               navigator.vibrate(50);
@@ -248,7 +252,7 @@ class UIManager {
             });
             contextEvent.clientX = touchStartPos.x;
             contextEvent.clientY = touchStartPos.y;
-            this.showContextMenu(contextEvent, item);
+            this.showContextMenu(contextEvent, folderItem, linkItem);
           }
         }, 500); // 500ms long press
       },
@@ -306,25 +310,30 @@ class UIManager {
     const linkTile = event.target.closest(".link-item");
     if (!folderTile && !linkTile) return;
     const payload = folderTile
-      ? { type: 'folder', id: folderTile.dataset.folderId }
-      : { type: 'link', id: linkTile.dataset.linkId };
-    event.dataTransfer.setData('application/json', JSON.stringify(payload));
-    event.dataTransfer.effectAllowed = 'move';
-  this.draggedElement = folderTile || linkTile;
-    (folderTile || linkTile).classList.add('dragging');
-  this.container.classList.add('drag-active');
+      ? { type: "folder", id: folderTile.dataset.folderId }
+      : { type: "link", id: linkTile.dataset.linkId };
+    event.dataTransfer.setData("application/json", JSON.stringify(payload));
+    event.dataTransfer.effectAllowed = "move";
+    this.draggedElement = folderTile || linkTile;
+    (folderTile || linkTile).classList.add("dragging");
+    this.container.classList.add("drag-active");
 
-  // Track drag type for onDragOver behavior
-  this._dnd.dragType = payload.type;
+    // Track drag type for onDragOver behavior
+    this._dnd.dragType = payload.type;
 
     // Cache tiles and their centers for the duration of this drag
-    const tiles = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
+    const tiles = Array.from(
+      this.container.querySelectorAll(".folder-item, .link-item, .add-tile")
+    );
     this._dnd.tiles = tiles;
     // Avoid layout thrash by reading all rects at once
     this._dnd.centers = tiles.map((tile) => {
       const r = tile.getBoundingClientRect();
       return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     });
+    // Remember the original index of the dragged tile to prevent self-left/right no-ops
+    const draggedIdx = tiles.indexOf(this.draggedElement);
+    this._dnd.originalIndex = draggedIdx >= 0 ? draggedIdx : null;
     this._dnd.lastPoint = null;
     this._dnd.lastIndex = null;
     this._dnd.indicatorIndex = null;
@@ -332,7 +341,7 @@ class UIManager {
 
   onDragOver(event) {
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+    event.dataTransfer.dropEffect = "move";
 
     // Stage latest point, batch heavy work in RAF
     this._dnd.lastPoint = { x: event.clientX, y: event.clientY };
@@ -353,70 +362,80 @@ class UIManager {
       if (lp) {
         const dx = point.x - lp.x;
         const dy = point.y - lp.y;
-        if ((dx*dx + dy*dy) < (this._dnd.moveThreshold * this._dnd.moveThreshold)) {
+        if (
+          dx * dx + dy * dy <
+          this._dnd.moveThreshold * this._dnd.moveThreshold
+        ) {
           return;
         }
       }
       this._dnd._prevPoint = point;
 
-  // Hover highlight: only update when the hovered element changes
-      let targetFolder = null; let targetLink = null;
-      const els = (document.elementsFromPoint ? document.elementsFromPoint(point.x, point.y) : [document.elementFromPoint(point.x, point.y)]);
+      // Hover highlight: only update when the hovered element changes
+      let targetFolder = null;
+      let targetLink = null;
+      const els = document.elementsFromPoint
+        ? document.elementsFromPoint(point.x, point.y)
+        : [document.elementFromPoint(point.x, point.y)];
       if (els && els.length) {
         for (const el of els) {
-          if (el?.classList?.contains('drop-indicator')) continue; // ignore our indicator
-          if (el?.classList?.contains('folder-popover') || el?.classList?.contains('folder-popover-backdrop')) continue; // ignore overlay layers
-          const f = el.closest?.('.folder-item');
-          const l = el.closest?.('.link-item');
-          if (f && this.container.contains(f)) { targetFolder = f; break; }
-          if (l && this.container.contains(l)) { targetLink = l; break; }
+          if (el?.classList?.contains("drop-indicator")) continue; // ignore our indicator
+          if (
+            el?.classList?.contains("folder-popover") ||
+            el?.classList?.contains("folder-popover-backdrop")
+          )
+            continue; // ignore overlay layers
+          // ignore the dragged element itself to avoid self-hover flicker
+          if (
+            this.draggedElement &&
+            (el === this.draggedElement || this.draggedElement.contains?.(el))
+          )
+            continue;
+          const f = el.closest?.(".folder-item");
+          const l = el.closest?.(".link-item");
+          if (f && this.container.contains(f)) {
+            targetFolder = f;
+            break;
+          }
+          if (l && this.container.contains(l)) {
+            targetLink = l;
+            break;
+          }
         }
       }
       const newHover = targetFolder || targetLink;
       if (newHover !== this._dnd.lastHoverEl) {
         this.clearHoverStates();
-        if (targetFolder) targetFolder.classList.add('dnd-over-folder');
-        if (targetLink) targetLink.classList.add('dnd-over-link');
+        if (targetFolder) targetFolder.classList.add("dnd-over-folder");
+        if (targetLink) targetLink.classList.add("dnd-over-link");
         this._dnd.lastHoverEl = newHover;
-        // When hovering a tile directly, hide indicator (avoid jitter)
-        if (newHover) this.removeDropIndicator();
+        // When hovering a tile directly, hide indicator (gap-only indicator policy)
+        if (newHover) {
+          this.removeDropIndicator();
+          this._dnd.indicatorIndex = null;
+        }
       }
 
-      const dragType = this._dnd.dragType;
-      const shouldShowIndicator = (dragType === 'folder' || dragType === 'link') || (!newHover);
-      // If dragging a site onto a tile, prefer hover mode and hide indicator
-      if (dragType === 'site' && newHover) {
-        this.removeDropIndicator();
-        return;
-      }
+      // Gap-only indicator: show only when not hovering any tile
+      if (!newHover) {
+        let index = this.findInsertIndexCached(point);
+        // Hide indicator for no-op positions next to the dragged tile
+        const orig = this._dnd.originalIndex;
+        if (orig != null && (index === orig || index === orig + 1)) {
+          this.removeDropIndicator();
+          this._dnd.indicatorIndex = null;
+          return;
+        }
 
-      if (shouldShowIndicator) {
-        // If hovering a tile during folder/link reorder, choose side (before/after) based on pointer half
-        let index;
-        let bypassHysteresis = false;
-        if (newHover && (dragType === 'folder' || dragType === 'link')) {
-          const tilesArr = this._dnd.tiles || [];
-          const hoverIdx = tilesArr.indexOf(newHover);
-          if (hoverIdx >= 0) {
-            const r = newHover.getBoundingClientRect();
-            const cx = r.left + r.width / 2;
-            // Tolerance to avoid flicker near exact center
-            const tol = Math.max(4, Math.min(10, r.width * 0.06));
-            index = (point.x < (cx - tol)) ? hoverIdx : (hoverIdx + 1);
-            bypassHysteresis = true;
-          }
-        }
-        if (index == null) {
-          // Fallback to nearest tile center
-          index = this.findInsertIndexCached(point);
-        }
         const prev = this._dnd.indicatorIndex;
-        if (prev == null || (bypassHysteresis ? (prev !== index) : this.shouldSnapToIndex(point, prev, index))) {
+        if (prev == null || this.shouldSnapToIndex(point, prev, index)) {
           this._dnd.indicatorIndex = index;
           const refNode = this._dnd.tiles[index] || null;
           const indicator = this.getOrCreateDropIndicator();
           // FLIP for smoother move: remember from position
-          const fromRect = indicator.parentNode ? indicator.getBoundingClientRect() : null;
+          const fromRect = indicator.parentNode
+            ? indicator.getBoundingClientRect()
+            : null;
           if (refNode) {
             this.container.insertBefore(indicator, refNode);
           } else {
@@ -426,14 +445,15 @@ class UIManager {
             const toRect = indicator.getBoundingClientRect();
             const dx = fromRect.left - toRect.left;
             const dy = fromRect.top - toRect.top;
-            const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            if (!reduced && (Math.abs(dx) + Math.abs(dy) > 1)) {
-              indicator.style.transition = 'none';
+            const reduced =
+              window.matchMedia &&
+              window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+            if (!reduced && Math.abs(dx) + Math.abs(dy) > 1) {
+              indicator.style.transition = "none";
               indicator.style.transform = `translate(${dx}px, ${dy}px)`;
-              // next frame: animate to place
               requestAnimationFrame(() => {
-                indicator.style.transition = 'transform 120ms ease';
-                indicator.style.transform = 'translate(0, 0)';
+                indicator.style.transition = "transform 120ms ease";
+                indicator.style.transform = "translate(0, 0)";
               });
             }
           }
@@ -456,119 +476,186 @@ class UIManager {
 
   async onDrop(event) {
     event.preventDefault();
-    const data = event.dataTransfer.getData('application/json');
-    if (!data) { this.cleanupDnD(); return; }
-    let payload; try { payload = JSON.parse(data); } catch { this.cleanupDnD(); return; }
+    const data = event.dataTransfer.getData("application/json");
+    if (!data) {
+      this.cleanupDnD();
+      return;
+    }
+    let payload;
+    try {
+      payload = JSON.parse(data);
+    } catch {
+      this.cleanupDnD();
+      return;
+    }
 
-    const dropFolder = event.target.closest('.folder-item');
-    const dropLink = event.target.closest('.link-item');
-    const tiles = (this._dnd.tiles && this._dnd.tiles.length) ? this._dnd.tiles : Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
+    const dropFolder = event.target.closest(".folder-item");
+    const dropLink = event.target.closest(".link-item");
+    const tiles =
+      this._dnd.tiles && this._dnd.tiles.length
+        ? this._dnd.tiles
+        : Array.from(
+            this.container.querySelectorAll(
+              ".folder-item, .link-item, .add-tile"
+            )
+          );
     const point = { x: event.clientX, y: event.clientY };
-    const index = (this._dnd.centers && this._dnd.centers.length) ? this.findInsertIndexCached(point) : this.findInsertIndex(tiles, point);
+    const index =
+      this._dnd.centers && this._dnd.centers.length
+        ? this.findInsertIndexCached(point)
+        : this.findInsertIndex(tiles, point);
 
     try {
-    if (payload.type === 'site') {
+      if (payload.type === "site") {
         if (dropFolder) {
-          await this.folderSystem.moveSiteBetweenFolders(payload.folderId, payload.id, dropFolder.dataset.folderId);
-      // Update both source and target folder previews
-      this.updateFolderTilePreview(payload.folderId);
-      this.updateFolderTilePreview(dropFolder.dataset.folderId);
+          await this.folderSystem.moveSiteBetweenFolders(
+            payload.folderId,
+            payload.id,
+            dropFolder.dataset.folderId
+          );
+          // Update both source and target folder previews
+          this.updateFolderTilePreview(payload.folderId);
+          this.updateFolderTilePreview(dropFolder.dataset.folderId);
         } else if (dropLink) {
           const targetId = dropLink.dataset.linkId;
           const targetIndex = tiles.indexOf(dropLink);
           const insertIdx = targetIndex >= 0 ? targetIndex : index;
-          const tempLink = await this.folderSystem.moveSiteToRoot(payload.folderId, payload.id, insertIdx);
-          const newFolder = await this.folderSystem.createFolderFromRootLinks([tempLink.id, targetId], undefined, insertIdx);
+          const tempLink = await this.folderSystem.moveSiteToRoot(
+            payload.folderId,
+            payload.id,
+            insertIdx
+          );
+          const newFolder = await this.folderSystem.createFolderFromRootLinks(
+            [tempLink.id, targetId],
+            undefined,
+            insertIdx
+          );
           // Replace target link with new folder tile
           dropLink.remove();
           const folderEl = this.createFolderElement(newFolder);
           this.insertNodeAtIndex(folderEl, insertIdx);
-      // Update source folder preview (site removed)
-      this.updateFolderTilePreview(payload.folderId);
+          // Update source folder preview (site removed)
+          this.updateFolderTilePreview(payload.folderId);
         } else {
-          const link = await this.folderSystem.moveSiteToRoot(payload.folderId, payload.id, index);
+          const link = await this.folderSystem.moveSiteToRoot(
+            payload.folderId,
+            payload.id,
+            index
+          );
           const linkEl = this.createLinkTile(link);
           this.insertNodeAtIndex(linkEl, index);
-      // Update source folder preview (site removed)
-      this.updateFolderTilePreview(payload.folderId);
+          // Update source folder preview (site removed)
+          this.updateFolderTilePreview(payload.folderId);
         }
         this.closeFolderPopover?.();
       } else if (dropFolder) {
         // Dropping onto a folder tile
-        if (payload.type === 'link') {
-          await this.folderSystem.moveLinkToFolder(payload.id, dropFolder.dataset.folderId);
-          this.removeTileByDataset('link', payload.id);
+        if (payload.type === "link") {
+          await this.folderSystem.moveLinkToFolder(
+            payload.id,
+            dropFolder.dataset.folderId
+          );
+          this.removeTileByDataset("link", payload.id);
           this.updateFolderTilePreview(dropFolder.dataset.folderId);
-        } else if (payload.type === 'folder') {
-          await this.folderSystem.mergeFolders(payload.id, dropFolder.dataset.folderId);
-          this.removeTileByDataset('folder', payload.id);
+        } else if (payload.type === "folder") {
+          if (dropFolder.dataset.folderId === payload.id) {
+            // ignore self-drop
+            this.cleanupDnD();
+            return;
+          }
+          await this.folderSystem.mergeFolders(
+            payload.id,
+            dropFolder.dataset.folderId
+          );
+          this.removeTileByDataset("folder", payload.id);
           this.updateFolderTilePreview(dropFolder.dataset.folderId);
         }
-      } else if (dropLink && payload.type === 'link' && dropLink.dataset.linkId !== payload.id) {
-        // Link onto link -> new folder
-        const targetId = dropLink.dataset.linkId;
-        const targetIndex = tiles.indexOf(dropLink);
-        const insertIdx = targetIndex >= 0 ? targetIndex : index;
-        const newFolder = await this.folderSystem.createFolderFromRootLinks([payload.id, targetId], undefined, insertIdx);
-        this.removeTileByDataset('link', payload.id);
-        dropLink.remove();
-        const folderEl = this.createFolderElement(newFolder);
-        this.insertNodeAtIndex(folderEl, insertIdx);
+      } else if (
+        dropLink &&
+        payload.type === "link" &&
+        dropLink.dataset.linkId !== payload.id
+      ) {
+        // Disabled: link-on-link auto folder creation for reorder-first UX
+        // Fall through to reorder behavior below.
       } else {
         // Reorder in root grid
-        const newIndex = index;
-        await this.folderSystem.reorderRootItem(payload.type, payload.id, newIndex);
+        let newIndex =
+          this._dnd && this._dnd.indicatorIndex != null
+            ? this._dnd.indicatorIndex
+            : index;
+        // Prevent no-op reorder next to itself
+        const orig = this._dnd?.originalIndex;
+        if (orig != null && (newIndex === orig || newIndex === orig + 1)) {
+          this.cleanupDnD();
+          return;
+        }
+        await this.folderSystem.reorderRootItem(
+          payload.type,
+          payload.id,
+          newIndex
+        );
         const dragged = this.draggedElement;
         if (dragged && this.container.contains(dragged)) {
           this.insertNodeAtIndex(dragged, newIndex);
         }
       }
     } catch (err) {
-      console.error('DnD drop failed:', err);
+      console.error("DnD drop failed:", err);
     }
 
     this.cleanupDnD();
     // No full re-render; DOM updated in place
   }
 
-  onDragEnd(event) { this.cleanupDnD(); }
+  onDragEnd(event) {
+    this.cleanupDnD();
+  }
 
   cleanupDnD() {
     if (this.draggedElement) {
-      this.draggedElement.classList.remove('dragging');
+      this.draggedElement.classList.remove("dragging");
       this.draggedElement = null;
     }
     this.clearHoverStates();
     this.removeDropIndicator();
-    this.container.classList.remove('drag-active');
-  // reset caches
-  if (this._dnd.raf) cancelAnimationFrame(this._dnd.raf);
-  this._dnd.raf = 0;
-  this._dnd.lastPoint = null;
-  this._dnd._prevPoint = null;
-  this._dnd.lastHoverEl = null;
-  this._dnd.tiles = [];
-  this._dnd.centers = [];
-  this._dnd.indicatorIndex = null;
-  this._dnd.dragType = null;
+    this.container.classList.remove("drag-active");
+    // reset caches
+    if (this._dnd.raf) cancelAnimationFrame(this._dnd.raf);
+    this._dnd.raf = 0;
+    this._dnd.lastPoint = null;
+    this._dnd._prevPoint = null;
+    this._dnd.lastHoverEl = null;
+    this._dnd.tiles = [];
+    this._dnd.centers = [];
+    this._dnd.indicatorIndex = null;
+    this._dnd.dragType = null;
   }
 
   clearHoverStates() {
-  this.container.querySelectorAll('.dnd-over-folder').forEach(el => el.classList.remove('dnd-over-folder'));
-  this.container.querySelectorAll('.dnd-over-link').forEach(el => el.classList.remove('dnd-over-link'));
+    this.container
+      .querySelectorAll(".dnd-over-folder")
+      .forEach((el) => el.classList.remove("dnd-over-folder"));
+    this.container
+      .querySelectorAll(".dnd-over-link")
+      .forEach((el) => el.classList.remove("dnd-over-link"));
   }
 
   // Determine insertion index by closest x/y position among tiles
   findInsertIndex(tiles, point) {
     if (!tiles.length) return 0;
-    let bestIdx = tiles.length; let bestDist = Infinity;
+    let bestIdx = tiles.length;
+    let bestDist = Infinity;
     tiles.forEach((tile, idx) => {
       const r = tile.getBoundingClientRect();
       const cx = r.left + r.width / 2;
       const cy = r.top + r.height / 2;
-      const dx = point.x - cx; const dy = point.y - cy;
-      const d = dx*dx + dy*dy;
-      if (d < bestDist) { bestDist = d; bestIdx = idx; }
+      const dx = point.x - cx;
+      const dy = point.y - cy;
+      const d = dx * dx + dy * dy;
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = idx;
+      }
     });
     // Insert before the closest tile
     return bestIdx;
@@ -578,12 +665,17 @@ class UIManager {
   findInsertIndexCached(point) {
     const centers = this._dnd.centers || [];
     if (!centers.length) return 0;
-    let bestIdx = centers.length; let bestDist = Infinity;
+    let bestIdx = centers.length;
+    let bestDist = Infinity;
     for (let i = 0; i < centers.length; i++) {
       const c = centers[i];
-      const dx = point.x - c.x; const dy = point.y - c.y;
-      const d = dx*dx + dy*dy;
-      if (d < bestDist) { bestDist = d; bestIdx = i; }
+      const dx = point.x - c.x;
+      const dy = point.y - c.y;
+      const d = dx * dx + dy * dy;
+      if (d < bestDist) {
+        bestDist = d;
+        bestIdx = i;
+      }
     }
     return bestIdx;
   }
@@ -594,8 +686,9 @@ class UIManager {
     const centers = this._dnd.centers;
     if (!centers || !centers[currentIndex] || !centers[nextIndex]) return true;
     const cur = centers[currentIndex];
-    const dx = point.x - cur.x; const dy = point.y - cur.y;
-    return (dx*dx + dy*dy) > (this._dnd.hysteresis * this._dnd.hysteresis);
+    const dx = point.x - cur.x;
+    const dy = point.y - cur.y;
+    return dx * dx + dy * dy > this._dnd.hysteresis * this._dnd.hysteresis;
   }
 
   // Recalculate cached tile centers (lightweight, called only on indicator move)
@@ -610,7 +703,9 @@ class UIManager {
 
   // Initialize tiles and centers cache if missing
   ensureDnDCenters() {
-    const tiles = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
+    const tiles = Array.from(
+      this.container.querySelectorAll(".folder-item, .link-item, .add-tile")
+    );
     this._dnd.tiles = tiles;
     this._dnd.centers = tiles.map((tile) => {
       const r = tile.getBoundingClientRect();
@@ -622,10 +717,10 @@ class UIManager {
     if (!this.dropIndicator) {
       this.dropIndicator = document.createElement("div");
       this.dropIndicator.className = "drop-indicator";
-  // Align horizontal spacing with grid gap
-  const cs = getComputedStyle(this.container);
-  const gap = cs.getPropertyValue('--gap-size') || cs.gap || '24px';
-  this.dropIndicator.style.margin = `0 calc(${gap} / 2)`;
+      // Align horizontal spacing with grid gap
+      const cs = getComputedStyle(this.container);
+      const gap = cs.getPropertyValue("--gap-size") || cs.gap || "24px";
+      this.dropIndicator.style.margin = `0 calc(${gap} / 2)`;
     }
     return this.dropIndicator;
   }
@@ -638,8 +733,11 @@ class UIManager {
 
   // ---- DOM helpers for in-place updates (avoid full re-render) ----
   insertNodeAtIndex(node, index) {
-    const tilesWithAdd = Array.from(this.container.querySelectorAll('.folder-item, .link-item, .add-tile'));
-    const addTile = tilesWithAdd.find(el => el.classList.contains('add-tile')) || null;
+    const tilesWithAdd = Array.from(
+      this.container.querySelectorAll(".folder-item, .link-item, .add-tile")
+    );
+    const addTile =
+      tilesWithAdd.find((el) => el.classList.contains("add-tile")) || null;
     // Ensure node is not duplicated in DOM
     if (node.parentNode === this.container) {
       // If already in DOM, remove to allow reinsertion
@@ -654,17 +752,20 @@ class UIManager {
   }
 
   removeTileByDataset(type, id) {
-    const sel = type === 'folder'
-      ? `.folder-item[data-folder-id="${id}"]`
-      : `.link-item[data-link-id="${id}"]`;
+    const sel =
+      type === "folder"
+        ? `.folder-item[data-folder-id="${id}"]`
+        : `.link-item[data-link-id="${id}"]`;
     const el = this.container.querySelector(sel);
     if (el) el.remove();
   }
 
   updateFolderTilePreview(folderId) {
-    const folderEl = this.container.querySelector(`.folder-item[data-folder-id="${folderId}"]`);
+    const folderEl = this.container.querySelector(
+      `.folder-item[data-folder-id="${folderId}"]`
+    );
     if (!folderEl) return;
-    const button = folderEl.querySelector('.folder-button');
+    const button = folderEl.querySelector(".folder-button");
     if (!button) return;
     // Clear existing preview slots
     while (button.firstChild) button.removeChild(button.firstChild);
@@ -675,15 +776,18 @@ class UIManager {
 
   // ============ Context Menu ============
 
-  showContextMenu(event, folderItem) {
+  showContextMenu(event, folderItem, linkItem) {
     this.closeContextMenu(); // Close any existing menu
 
     const menu = document.createElement("div");
     menu.className = "context-menu";
-    menu.innerHTML = `
-      ${
-        folderItem
-          ? `
+    // Store context for handlers
+    if (folderItem) menu.dataset.folderId = folderItem.dataset.folderId;
+    if (linkItem) menu.dataset.linkId = linkItem.dataset.linkId;
+
+    // Build menu based on target
+    if (folderItem) {
+      menu.innerHTML = `
         <div class="context-item" data-action="edit">
           <span>Edit Folder</span>
         </div>
@@ -694,17 +798,26 @@ class UIManager {
         <div class="context-item" data-action="add-site">
           <span>Add Site</span>
         </div>
-      `
-          : `
+      `;
+    } else if (linkItem) {
+      menu.innerHTML = `
+        <div class="context-item" data-action="move-link">
+          <span>Move to folder…</span>
+        </div>
+        <div class="context-item" data-action="folderize-link">
+          <span>Create folder from this link</span>
+        </div>
+      `;
+    } else {
+      menu.innerHTML = `
         <div class="context-item" data-action="add-folder">
           <span>Add Folder</span>
         </div>
         <div class="context-item" data-action="add-link">
           <span>Add Link</span>
         </div>
-      `
-      }
-    `;
+      `;
+    }
 
     // Position the menu
     menu.style.left = `${event.clientX}px`;
@@ -714,7 +827,13 @@ class UIManager {
     menu.addEventListener("click", (e) => {
       const action = e.target.closest(".context-item")?.dataset.action;
       if (action) {
-        this.handleContextAction(action, folderItem);
+        const ctx = {
+          folderId:
+            folderItem?.dataset.folderId || menu.dataset.folderId || null,
+          linkId: linkItem?.dataset.linkId || menu.dataset.linkId || null,
+          event,
+        };
+        this.handleContextAction(action, ctx);
       }
       this.closeContextMenu();
     });
@@ -741,8 +860,9 @@ class UIManager {
     }
   }
 
-  handleContextAction(action, folderItem) {
-    const folderId = folderItem?.dataset.folderId;
+  handleContextAction(action, ctx) {
+    const folderId = ctx?.folderId || null;
+    const linkId = ctx?.linkId || null;
 
     try {
       switch (action) {
@@ -761,11 +881,90 @@ class UIManager {
         case "add-site":
           if (folderId) this.showAddSiteDialog(folderId);
           break;
+        case "move-link":
+          if (linkId) this.showMoveLinkDialog(linkId);
+          break;
+        case "folderize-link":
+          if (linkId) this.createFolderFromSingleLink(linkId);
+          break;
         default:
           console.warn("Unknown context action:", action);
       }
     } catch (error) {
       console.error("Error handling context action:", error);
+    }
+  }
+
+  // Dialog to move a root link into an existing folder
+  showMoveLinkDialog(linkId) {
+    const folders = this.folderSystem.getAllFolders();
+    if (!folders.length) {
+      this.showNotification(
+        "No folders available. Create a folder first.",
+        "error"
+      );
+      return;
+    }
+
+    const dialog = this.createDialog(
+      "Move Link",
+      `
+      <div class="dialog-field">
+        <label for="move-target-folder">Select folder</label>
+        <select id="move-target-folder">
+          ${folders
+            .map((f) => `<option value="${f.id}">${f.name}</option>`)
+            .join("")}
+        </select>
+      </div>
+    `,
+      [
+        { text: "Cancel", action: "cancel" },
+        { text: "Move", action: "move", primary: true },
+      ]
+    );
+
+    dialog.addEventListener("action", async (e) => {
+      if (e.detail.action === "move") {
+        const targetId = dialog.querySelector("#move-target-folder").value;
+        try {
+          await this.folderSystem.moveLinkToFolder(linkId, targetId);
+          this.removeTileByDataset("link", linkId);
+          this.updateFolderTilePreview(targetId);
+          this.showNotification("Link moved to folder.");
+        } catch (err) {
+          console.error("Failed to move link:", err);
+          alert("Failed to move link.");
+          return; // keep dialog open
+        }
+      }
+      this.closeDialog();
+    });
+  }
+
+  // Convert a single root link into a new folder at the same grid position
+  async createFolderFromSingleLink(linkId) {
+    try {
+      const tiles = Array.from(
+        this.container.querySelectorAll(".folder-item, .link-item, .add-tile")
+      );
+      const linkEl = this.container.querySelector(
+        `.link-item[data-link-id="${linkId}"]`
+      );
+      const insertIdx = Math.max(0, tiles.indexOf(linkEl));
+      const newFolder = await this.folderSystem.createFolderFromRootLinks(
+        [linkId],
+        undefined,
+        insertIdx
+      );
+      // Replace link tile with new folder tile
+      if (linkEl) linkEl.remove();
+      const folderEl = this.createFolderElement(newFolder);
+      this.insertNodeAtIndex(folderEl, insertIdx);
+      this.showNotification("Folder created from link.");
+    } catch (err) {
+      console.error("Failed to create folder from link:", err);
+      alert("Failed to create folder.");
     }
   }
 
@@ -951,8 +1150,10 @@ class UIManager {
           <option value="root" selected>Home grid</option>
           ${this.folderSystem
             .getAllFolders()
-            .map((f) => `<option value="folder:${f.id}">Folder: ${f.name}</option>`) 
-            .join('')}
+            .map(
+              (f) => `<option value="folder:${f.id}">Folder: ${f.name}</option>`
+            )
+            .join("")}
         </select>
       </div>
     `,
@@ -972,16 +1173,16 @@ class UIManager {
           return;
         }
         try {
-          if (loc === 'root') {
+          if (loc === "root") {
             await this.folderSystem.addRootLink({ name, url });
-          } else if (loc.startsWith('folder:')) {
-            const folderId = loc.slice('folder:'.length);
+          } else if (loc.startsWith("folder:")) {
+            const folderId = loc.slice("folder:".length);
             await this.folderSystem.addSiteToFolder(folderId, { name, url });
           }
           this.refreshFolders();
         } catch (err) {
-          console.error('Failed to add link:', err);
-          alert('Failed to add link. Please check the URL and try again.');
+          console.error("Failed to add link:", err);
+          alert("Failed to add link. Please check the URL and try again.");
           return;
         }
       }
@@ -1078,8 +1279,8 @@ class UIManager {
 
   refreshFolders() {
     const folders = this.folderSystem.getAllFolders();
-  const links = this.folderSystem.getAllLinks?.() || [];
-  this.renderGrid(folders, links);
+    const links = this.folderSystem.getAllLinks?.() || [];
+    this.renderGrid(folders, links);
   }
 
   // ============ Rendering ============
@@ -1098,28 +1299,41 @@ class UIManager {
     const items = this.folderSystem.getRootItems?.();
     if (Array.isArray(items) && items.length) {
       items.forEach(({ type, item }) => {
-        const el = type === 'link' ? this.createLinkTile(item) : this.createFolderElement(item);
+        const el =
+          type === "link"
+            ? this.createLinkTile(item)
+            : this.createFolderElement(item);
         this.container.appendChild(el);
       });
     } else {
       // Fallback if ordering not available
-      (links || []).forEach((link) => this.container.appendChild(this.createLinkTile(link)));
-      (folders || []).forEach((folder) => this.container.appendChild(this.createFolderElement(folder)));
+      (links || []).forEach((link) =>
+        this.container.appendChild(this.createLinkTile(link))
+      );
+      (folders || []).forEach((folder) =>
+        this.container.appendChild(this.createFolderElement(folder))
+      );
     }
     // Add-tile at the end
     this.container.appendChild(this.createAddTile());
   }
 
   createAddTile() {
-    const add = document.createElement('div');
-    add.className = 'add-tile';
-    add.setAttribute('tabindex', '0');
-    add.setAttribute('role', 'button');
-  add.setAttribute('aria-label', 'Add link');
+    const add = document.createElement("div");
+    add.className = "add-tile";
+    add.setAttribute("tabindex", "0");
+    add.setAttribute("role", "button");
+    add.setAttribute("aria-label", "Add link");
     add.draggable = false;
-    add.innerHTML = '<span aria-hidden="true">+</span><div class="add-label">Add</div>';
-    add.addEventListener('click', () => this.showAddLinkDialog());
-    add.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.showAddLinkDialog(); } });
+    add.innerHTML =
+      '<span aria-hidden="true">+</span><div class="add-label">Add</div>';
+    add.addEventListener("click", () => this.showAddLinkDialog());
+    add.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        this.showAddLinkDialog();
+      }
+    });
     return add;
   }
 
@@ -1173,7 +1387,7 @@ class UIManager {
         img.loading = "lazy";
         img.alt = previews[i].name || "Site";
         slot.appendChild(img);
-  }
+      }
       wrapper.appendChild(slot);
     }
     return wrapper;
@@ -1188,37 +1402,40 @@ class UIManager {
   }
 
   createLinkTile(link) {
-  // Wrapper with inner square button and label outside (like folder tiles)
-  const wrapper = document.createElement('div');
-  wrapper.className = 'link-item';
-  wrapper.dataset.linkId = link.id;
-  wrapper.setAttribute('draggable', 'true');
+    // Wrapper with inner square button and label outside (like folder tiles)
+    const wrapper = document.createElement("div");
+    wrapper.className = "link-item";
+    wrapper.dataset.linkId = link.id;
+    wrapper.setAttribute("draggable", "true");
 
-  const button = document.createElement('a');
-  button.className = 'link-button';
-  button.href = link.url;
-  button.target = '_blank';
-  button.rel = 'noopener noreferrer';
-  button.setAttribute('title', link.name || link.url);
+    const button = document.createElement("a");
+    button.className = "link-button";
+    button.href = link.url;
+    // same-tab navigation
+    button.addEventListener('click', (e) => {
+      e.preventDefault();
+      try { window.location.href = link.url; } catch { window.location.assign(link.url); }
+    });
+    button.setAttribute("title", link.name || link.url);
 
-  const img = document.createElement('img');
-  const favicon = link.icon || this.folderSystem.generateFaviconUrl(link.url);
-  img.src = favicon;
-  img.loading = 'lazy';
-  img.alt = link.name || 'Link';
-  button.appendChild(img);
+    const img = document.createElement("img");
+    const favicon = link.icon || this.folderSystem.generateFaviconUrl(link.url);
+    img.src = favicon;
+    img.loading = "lazy";
+    img.alt = link.name || "Link";
+    button.appendChild(img);
 
-  const label = document.createElement('div');
-  label.className = 'link-title';
-  label.textContent = link.name || link.url;
+    const label = document.createElement("div");
+    label.className = "link-title";
+    label.textContent = link.name || link.url;
 
-  wrapper.appendChild(button);
-  wrapper.appendChild(label);
+    wrapper.appendChild(button);
+    wrapper.appendChild(label);
 
-  // Apply adaptive background to tile
-  this.applyAdaptiveTileBackground(img, link.url);
+    // Apply adaptive background to tile
+    this.applyAdaptiveTileBackground(img, link.url);
 
-  return wrapper;
+    return wrapper;
   }
 
   // ============ Modal / Overlay ============
@@ -1282,23 +1499,27 @@ class UIManager {
     grid.className = "site-grid";
 
     (folder.sites || []).forEach((site) => {
-      const item = document.createElement('div');
-      item.className = 'link-item';
-      item.style.cursor = 'pointer';
-      item.setAttribute('title', site.name || site.url);
-      item.addEventListener('click', () => window.open(site.url, '_blank', 'noopener,noreferrer'));
+      const item = document.createElement("div");
+      item.className = "link-item";
+      item.style.cursor = "pointer";
+      item.setAttribute("title", site.name || site.url);
+      item.addEventListener("click", (e) => {
+        e.preventDefault();
+        try { window.location.href = site.url; } catch { window.location.assign(site.url); }
+      });
 
-      const iconWrap = document.createElement('div');
-      iconWrap.className = 'link-icon';
-      const img = document.createElement('img');
-      const favicon = site.icon || this.folderSystem.generateFaviconUrl(site.url);
+      const iconWrap = document.createElement("div");
+      iconWrap.className = "link-icon";
+      const img = document.createElement("img");
+      const favicon =
+        site.icon || this.folderSystem.generateFaviconUrl(site.url);
       img.src = favicon;
-      img.loading = 'lazy';
-      img.alt = site.name || 'Site';
+      img.loading = "lazy";
+      img.alt = site.name || "Site";
       iconWrap.appendChild(img);
 
-      const label = document.createElement('div');
-      label.className = 'link-title';
+      const label = document.createElement("div");
+      label.className = "link-title";
       label.textContent = site.name || site.url;
 
       item.appendChild(iconWrap);
@@ -1318,12 +1539,12 @@ class UIManager {
     // Remove any existing popover
     this.closeFolderPopover();
 
-  // Create invisible backdrop to capture outside clicks
-  const backdrop = document.createElement("div");
-  backdrop.className = "folder-popover-backdrop";
-  document.body.appendChild(backdrop);
+    // Create invisible backdrop to capture outside clicks
+    const backdrop = document.createElement("div");
+    backdrop.className = "folder-popover-backdrop";
+    document.body.appendChild(backdrop);
 
-  const pop = document.createElement("div");
+    const pop = document.createElement("div");
     pop.className = "folder-popover";
     pop.setAttribute("role", "dialog");
     pop.setAttribute("aria-labelledby", "folder-popover-title");
@@ -1332,46 +1553,50 @@ class UIManager {
     grid.className = "site-grid";
     (folder.sites || []).forEach((site) => {
       // Use same visual structure as root grid link tiles
-      const wrapper = document.createElement('div');
-      wrapper.className = 'link-item popover-site';
-      wrapper.setAttribute('draggable', 'true');
+      const wrapper = document.createElement("div");
+      wrapper.className = "link-item popover-site";
+      wrapper.setAttribute("draggable", "true");
       wrapper.dataset.folderId = folder.id;
       wrapper.dataset.siteId = site.id;
 
-      const button = document.createElement('a');
-      button.className = 'link-button';
+      const button = document.createElement("a");
+      button.className = "link-button";
       button.href = site.url;
-      button.target = '_blank';
-      button.rel = 'noopener,noreferrer';
-      button.setAttribute('title', site.name || site.url);
+      // same-tab navigation from popover tiles
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        try { window.location.href = site.url; } catch { window.location.assign(site.url); }
+      });
+      button.setAttribute("title", site.name || site.url);
 
-      const img = document.createElement('img');
-      const favicon = site.icon || this.folderSystem.generateFaviconUrl(site.url);
+      const img = document.createElement("img");
+      const favicon =
+        site.icon || this.folderSystem.generateFaviconUrl(site.url);
       img.src = favicon;
-      img.loading = 'lazy';
-      img.alt = site.name || 'Site';
+      img.loading = "lazy";
+      img.alt = site.name || "Site";
       button.appendChild(img);
 
-      const label = document.createElement('div');
-      label.className = 'link-title';
+      const label = document.createElement("div");
+      label.className = "link-title";
       label.textContent = site.name || site.url;
 
       // Apply adaptive background to tile
       this.applyAdaptiveTileBackground(img, site.url);
 
       // DnD payload from popover
-      wrapper.addEventListener('dragstart', (e) => {
-        const payload = { type: 'site', folderId: folder.id, id: site.id };
-        e.dataTransfer.setData('application/json', JSON.stringify(payload));
-        e.dataTransfer.effectAllowed = 'move';
-        wrapper.classList.add('dragging');
+      wrapper.addEventListener("dragstart", (e) => {
+        const payload = { type: "site", folderId: folder.id, id: site.id };
+        e.dataTransfer.setData("application/json", JSON.stringify(payload));
+        e.dataTransfer.effectAllowed = "move";
+        wrapper.classList.add("dragging");
         this.draggedElement = wrapper;
-  // Mark drag type and enable wider gaps in root grid during cross-surface drag
-  this._dnd.dragType = 'site';
-  this.container.classList.add('drag-active');
+        // Mark drag type and enable wider gaps in root grid during cross-surface drag
+        this._dnd.dragType = "site";
+        this.container.classList.add("drag-active");
       });
-      wrapper.addEventListener('dragend', () => {
-        wrapper.classList.remove('dragging');
+      wrapper.addEventListener("dragend", () => {
+        wrapper.classList.remove("dragging");
         if (this.draggedElement === wrapper) this.draggedElement = null;
       });
 
@@ -1391,12 +1616,12 @@ class UIManager {
       input.type = "text";
       input.className = "popover-title-input";
       input.value = folder.name || "Folder";
-  // Replace node
+      // Replace node
       pop.replaceChild(input, titleEl);
-  // Focus and place caret at end (no selection highlight for invisible input)
-  input.focus();
-  const v = input.value;
-  input.setSelectionRange(v.length, v.length);
+      // Focus and place caret at end (no selection highlight for invisible input)
+      input.focus();
+      const v = input.value;
+      input.setSelectionRange(v.length, v.length);
 
       let done = false;
       const commit = async () => {
@@ -1406,7 +1631,11 @@ class UIManager {
         // Restore title element if input still mounted
         titleEl.textContent = newName || folder.name || "Folder";
         if (input.isConnected) {
-          try { pop.replaceChild(titleEl, input); } catch (_) { /* ignore */ }
+          try {
+            pop.replaceChild(titleEl, input);
+          } catch (_) {
+            /* ignore */
+          }
         }
         if (newName && newName !== folder.name) {
           try {
@@ -1433,7 +1662,11 @@ class UIManager {
           e.preventDefault();
           // Cancel edit
           if (input.isConnected) {
-            try { pop.replaceChild(titleEl, input); } catch (_) { /* ignore */ }
+            try {
+              pop.replaceChild(titleEl, input);
+            } catch (_) {
+              /* ignore */
+            }
           }
           done = true; // prevent blur commit
         }
@@ -1443,7 +1676,7 @@ class UIManager {
       input.addEventListener("blur", onBlur, { once: true });
     });
     pop.appendChild(titleEl);
-  document.body.appendChild(pop);
+    document.body.appendChild(pop);
 
     // Position centered around click/anchor; fallback to anchor center if clickPoint missing
     const anchorRect = anchorEl?.getBoundingClientRect?.();
@@ -1493,36 +1726,44 @@ class UIManager {
     const onEsc = (e) => {
       if (e.key === "Escape") this.closeFolderPopover();
     };
-    
+
     // Drag and drop support for backdrop - allow events to pass through
     const onBackdropDragOver = (e) => {
       e.preventDefault();
       // Forward the event to the main grid by temporarily hiding backdrop
-      backdrop.style.pointerEvents = 'none';
+      backdrop.style.pointerEvents = "none";
       const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
-      backdrop.style.pointerEvents = '';
-      
+      backdrop.style.pointerEvents = "";
+
       // If we're over the main content area, handle the drag over
-      const mainContent = document.querySelector('.main-content');
-      if (mainContent && (mainContent.contains(elementBelow) || this.container.contains(elementBelow))) {
+      const mainContent = document.querySelector(".main-content");
+      if (
+        mainContent &&
+        (mainContent.contains(elementBelow) ||
+          this.container.contains(elementBelow))
+      ) {
         this.onDragOver(e);
       }
     };
-    
+
     const onBackdropDrop = (e) => {
       e.preventDefault();
       // Forward the event to the main grid by temporarily hiding backdrop
-      backdrop.style.pointerEvents = 'none';
+      backdrop.style.pointerEvents = "none";
       const elementBelow = document.elementFromPoint(e.clientX, e.clientY);
-      backdrop.style.pointerEvents = '';
-      
+      backdrop.style.pointerEvents = "";
+
       // If we're over the main content area, handle the drop
-      const mainContent = document.querySelector('.main-content');
-      if (mainContent && (mainContent.contains(elementBelow) || this.container.contains(elementBelow))) {
+      const mainContent = document.querySelector(".main-content");
+      if (
+        mainContent &&
+        (mainContent.contains(elementBelow) ||
+          this.container.contains(elementBelow))
+      ) {
         this.onDrop(e);
       }
     };
-    
+
     // Attach listeners after next tick to avoid immediate close from the opening click
     setTimeout(() => {
       backdrop.addEventListener("click", onBackdropClick);
@@ -1538,9 +1779,9 @@ class UIManager {
       backdrop.removeEventListener("drop", onBackdropDrop);
       document.removeEventListener("keydown", onEsc);
     };
-  pop._backdrop = backdrop;
-  pop._anchor = anchorEl;
-  pop._folderId = folder.id;
+    pop._backdrop = backdrop;
+    pop._anchor = anchorEl;
+    pop._folderId = folder.id;
 
     this.currentPopover = pop;
   }
@@ -1562,28 +1803,36 @@ class UIManager {
    * Apply adaptive background to tile based on site URL
    */
   applyAdaptiveTileBackground(imgEl, siteUrl) {
-    const button = imgEl.closest('.link-button');
+    const button = imgEl.closest(".link-button");
     if (!button || button.dataset.adaptiveApplied) return;
 
     // Generate consistent color from domain
     const baseColor = this.generateDomainColor(siteUrl);
-    
+
     // Convert HSL to RGB for alpha values
     const rgbColor = this.hslToRgb(baseColor);
-    
+
     // Apply to entire tile with proper rgba transparency and !important to override CSS
-    button.style.setProperty('background', `linear-gradient(135deg, rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.25), rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.15))`, 'important');
-    button.style.setProperty('border', `1px solid rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.4)`, 'important');
-    button.style.setProperty('--adaptive-color', baseColor);
-    
+    button.style.setProperty(
+      "background",
+      `linear-gradient(135deg, rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.25), rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.15))`,
+      "important"
+    );
+    button.style.setProperty(
+      "border",
+      `1px solid rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.4)`,
+      "important"
+    );
+    button.style.setProperty("--adaptive-color", baseColor);
+
     // Add class for CSS animations/effects
-    button.classList.add('adaptive-bg');
-    button.dataset.adaptiveApplied = 'true';
-    
+    button.classList.add("adaptive-bg");
+    button.dataset.adaptiveApplied = "true";
+
     // Ensure icon stays clean
-    imgEl.style.width = '32px';
-    imgEl.style.height = '32px';
-    imgEl.style.objectFit = 'contain';
+    imgEl.style.width = "32px";
+    imgEl.style.height = "32px";
+    imgEl.style.objectFit = "contain";
   }
 
   /**
@@ -1595,18 +1844,18 @@ class UIManager {
       let hash = 0;
       for (let i = 0; i < hostname.length; i++) {
         const char = hostname.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
+        hash = (hash << 5) - hash + char;
         hash = hash & hash; // Convert to 32-bit integer
       }
-      
+
       // Convert to HSL for pleasant colors
       const hue = Math.abs(hash) % 360;
       const saturation = 65 + (Math.abs(hash) % 20); // 65-85%
-      const lightness = 55 + (Math.abs(hash) % 15);  // 55-70%
-      
+      const lightness = 55 + (Math.abs(hash) % 15); // 55-70%
+
       return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
     } catch (_) {
-      return 'hsl(220, 70%, 60%)'; // Default blue
+      return "hsl(220, 70%, 60%)"; // Default blue
     }
   }
 
@@ -1617,35 +1866,35 @@ class UIManager {
     // Parse HSL string like "hsl(220, 70%, 60%)"
     const match = hslString.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
     if (!match) return { r: 66, g: 133, b: 244 }; // Default blue
-    
+
     const h = parseInt(match[1]) / 360;
     const s = parseInt(match[2]) / 100;
     const l = parseInt(match[3]) / 100;
-    
+
     const hue2rgb = (p, q, t) => {
       if (t < 0) t += 1;
       if (t > 1) t -= 1;
-      if (t < 1/6) return p + (q - p) * 6 * t;
-      if (t < 1/2) return q;
-      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
       return p;
     };
-    
+
     let r, g, b;
     if (s === 0) {
       r = g = b = l; // achromatic
     } else {
       const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
       const p = 2 * l - q;
-      r = hue2rgb(p, q, h + 1/3);
+      r = hue2rgb(p, q, h + 1 / 3);
       g = hue2rgb(p, q, h);
-      b = hue2rgb(p, q, h - 1/3);
+      b = hue2rgb(p, q, h - 1 / 3);
     }
-    
+
     return {
       r: Math.round(r * 255),
       g: Math.round(g * 255),
-      b: Math.round(b * 255)
+      b: Math.round(b * 255),
     };
   }
 
