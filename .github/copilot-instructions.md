@@ -75,7 +75,7 @@ A custom new tab page Chrome extension with Android-style folders for organizing
 ### Features:
 - Folder grid with preview icons
 - Expandable overlay for folder contents
-- Drag-and-drop reordering
+- Drag-and-drop merging (link to folder, link to link creating folder, folder to folder)
 - Add/edit/delete folders and sites
 - Optional clock widget
 - Import/export settings

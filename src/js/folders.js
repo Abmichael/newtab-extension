@@ -231,29 +231,6 @@ class FolderSystem {
     return removed;
   }
 
-  /** Reorder folders by moving item at fromIndex to toIndex */
-  async reorderFolders(fromIndex, toIndex) {
-    const len = this.folders.length;
-    if (fromIndex < 0 || fromIndex >= len || toIndex < 0 || toIndex >= len)
-      throw new Error("Index out of range");
-    const [moved] = this.folders.splice(fromIndex, 1);
-    this.folders.splice(toIndex, 0, moved);
-    await this.save();
-    return this.folders;
-  }
-
-  /** Reorder a folder by ID to a new position */
-  async reorderFolder(folderId, newIndex) {
-    const currentIndex = this.folders.findIndex((f) => f.id === folderId);
-    if (currentIndex === -1) throw new Error("Folder not found");
-
-    const clampedIndex = Math.max(
-      0,
-      Math.min(newIndex, this.folders.length - 1)
-    );
-    return await this.reorderFolders(currentIndex, clampedIndex);
-  }
-
   /** Get all folders in order */
   getAllFolders() {
     return this.folders;
@@ -349,17 +326,6 @@ class FolderSystem {
     this.links.splice(clamped, 0, moved);
     await this.save();
     return this.links;
-  }
-
-  /** Reorder any root item (folder or link) by type and id */
-  async reorderRootItem(type, id, newIndex) {
-    const idx = this.rootOrder.findIndex((e) => e.type === type && e.id === id);
-    if (idx === -1) throw new Error("Root item not found");
-    const clamped = Math.max(0, Math.min(newIndex, this.rootOrder.length - 1));
-    const [moved] = this.rootOrder.splice(idx, 1);
-    this.rootOrder.splice(clamped, 0, moved);
-    await this.save();
-    return this.rootOrder;
   }
 
   /** Move a root link into a folder as a site */

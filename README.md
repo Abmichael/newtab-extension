@@ -34,7 +34,7 @@ Transform your Chrome new tab into an organized workspace with beautiful Android
 1. **Create Your First Folder**: Click the "+" button to add a new folder
 2. **Add Sites**: Click on a folder to open it, then use the "+" to add sites
 3. **Customize**: Click the settings (⚙️) button to personalize themes and layout
-4. **Organize**: Drag and drop folders and sites to reorder them
+4. **Organize**: Drag and drop folders and sites to merge them together
 
 ## ⚙️ Settings & Customization
 

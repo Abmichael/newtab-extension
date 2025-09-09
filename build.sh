@@ -33,6 +33,16 @@ cat $SRC_DIR/js/performance.js \
     $SRC_DIR/js/storage.js \
     $SRC_DIR/js/folders.js \
     $SRC_DIR/js/settings.js \
+    $SRC_DIR/js/ui/ComponentManager.js \
+    $SRC_DIR/js/ui/RenderManager.js \
+    $SRC_DIR/js/ui/DialogManager.js \
+    $SRC_DIR/js/ui/NotificationManager.js \
+    $SRC_DIR/js/ui/DragDropManager.js \
+    $SRC_DIR/js/ui/ContextMenuManager.js \
+    $SRC_DIR/js/ui/PopoverManager.js \
+    $SRC_DIR/js/ui/SettingsUIManager.js \
+    $SRC_DIR/js/ui/EventHandler.js \
+    $SRC_DIR/js/ui/index.js \
     $SRC_DIR/js/ui.js \
     $SRC_DIR/js/app.js > $BUILD_DIR/js/combined.js
 

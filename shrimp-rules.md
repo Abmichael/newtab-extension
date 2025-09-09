@@ -177,7 +177,7 @@ const loadData = async () => {
 - **Click folder**: Expand to full-screen overlay
 - **Click outside**: Close folder overlay
 - **Right-click**: Enter edit mode
-- **Drag-and-drop**: Reorder folders/sites
+- **Drag-and-drop**: Merge folders/sites together
 - **Long press**: Mobile edit mode (touch devices)
 
 ### Icon Management Standards

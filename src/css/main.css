@@ -112,16 +112,6 @@ body.theme-light .clock-widget {
   width: 100%;
 }
 
-/* During dragging, subtly increase spacing to make between-slots easier to hit */
-.folder-grid.drag-active > .folder-item,
-.folder-grid.drag-active > .link-item,
-.folder-grid.drag-active > .add-tile,
-.folder-grid.drag-active > .drop-indicator {
-  /* Expand horizontal spacing by 50% using margins to preserve layout wrap */
-  margin-left: calc(var(--gap-size) * 0.25);
-  margin-right: calc(var(--gap-size) * 0.25);
-}
-
 /* Folder overlay for expanded view */
 .folder-overlay {
   position: fixed;

@@ -36,22 +36,6 @@
   transition: transform 0.2s ease;
 }
 
-.drop-indicator {
-  width: 2px;
-  height: calc(var(--folder-size, 120px) + 10px);
-  border-radius: 1px;
-  background: color-mix(in srgb, var(--primary-color) 80%, white 20%);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 18%, transparent);
-  opacity: 0;
-  animation: dropIndicatorShow 0.12s ease forwards;
-  transition: transform 120ms ease;
-  pointer-events: none;
-}
-
-@keyframes dropIndicatorShow {
-  to { opacity: 1; }
-}
-
 /* Context menu animation */
 .context-menu {
   animation: contextMenuShow 0.15s ease forwards;
@@ -113,8 +97,7 @@
   .folder-overlay.open .folder-modal,
   .context-menu,
   .dialog-overlay,
-  .dialog,
-  .drop-indicator {
+  .dialog {
     animation: none !important;
     transition: none !important;
   }

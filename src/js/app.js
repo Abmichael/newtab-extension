@@ -127,6 +127,14 @@ class NeoTabApp {
         }
       });
     }
+
+    // Listen for refresh requests from drag and drop operations
+    if (folderGrid) {
+      folderGrid.addEventListener("neotab:refresh-needed", (event) => {
+        console.log("Refreshing grid due to:", event.detail?.reason);
+        this.refreshGrid();
+      });
+    }
   }
 
   async handleAddFolder() {
@@ -152,6 +160,17 @@ class NeoTabApp {
           });
         }
       }
+    }
+  }
+
+  /**
+   * Refresh the grid display with current data
+   */
+  refreshGrid() {
+    if (this.ui && this.folderSystem) {
+      const folders = this.folderSystem.getAllFolders?.() || [];
+      const links = this.folderSystem.getAllLinks?.() || [];
+      this.ui.renderGrid(folders, links);
     }
   }
 

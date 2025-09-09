@@ -79,7 +79,7 @@ body.theme-light .folder-title {
   text-shadow: none;
 }
 
-/* DnD hover states (exclusive with drop indicator) */
+/* DnD hover states for merging operations */
 .folder-item.dnd-over-folder .folder-button {
   /* keep the primary-color outline but reduce drop shadow intensity */
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 50%, transparent), 0 6px 14px rgba(0,0,0,0.12);
