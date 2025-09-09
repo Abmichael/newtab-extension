@@ -7,7 +7,7 @@ Transform your Chrome new tab into an organized workspace with beautiful Android
 ## 🌟 Features
 
 - **Android-Style Folders**: Organize your bookmarks in beautiful, intuitive folders
-- **Grid Layout**: Responsive grid that adapts to your screen size
+- **Configurable Layout**: Adjustable grid size and tile dimensions to fit your preference
 - **Drag & Drop**: Easily reorganize folders and sites
 - **Custom Themes**: 5 beautiful preset themes to match your style
 - **Clock Widget**: Optional digital clock with customizable format
@@ -46,8 +46,8 @@ Transform your Chrome new tab into an organized workspace with beautiful Android
 - **Sunset**: Warm orange and pink gradient
 
 ### Grid Options
-- **Auto**: Automatically adjusts columns based on screen size
-- **Fixed Columns**: Choose 3, 4, 5, or 6 columns
+- **Grid Size**: Choose 3, 4, 5, 6, 7, or 8 columns
+- **Tile Size**: Adjustable tile size from 80px to 200px (affects both folders and links)
 - **Responsive**: Smart responsive layout for all devices
 
 ### Clock Widget

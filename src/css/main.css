@@ -6,7 +6,7 @@
   --background-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   /* Core grid variables */
   --grid-size: 4;
-  --folder-size: 120px; /* base tile size */
+  --folder-size: 120px; /* configurable tile size - set by JavaScript */
   --gap-size: 24px;
   --bg-color: #111111;
 }
@@ -175,7 +175,6 @@ body.theme-light .clock-widget {
 
   .folder-grid {
     /* Mobile: 2-3 columns depending on width */
-    --folder-size: 100px;
     --gap-size: 16px;
   }
 
@@ -186,7 +185,6 @@ body.theme-light .clock-widget {
 @media (min-width: 769px) and (max-width: 1199px) {
   .folder-grid {
     /* Tablet: 4-6 columns based on width */
-    --folder-size: 120px;
     --gap-size: 20px;
   }
 }
@@ -195,7 +193,6 @@ body.theme-light .clock-widget {
 @media (min-width: 1200px) {
   .folder-grid {
     /* Desktop: 6-8 columns based on width */
-    --folder-size: 140px;
     --gap-size: 24px;
   }
 }

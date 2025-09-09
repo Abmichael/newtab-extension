@@ -74,6 +74,16 @@ class SettingsManager {
     try {
       const data = await this.storage.loadData();
       this.settings = data.settings || this.getDefaultSettings();
+      
+      // Migration: Add tileSize setting if it doesn't exist
+      if (typeof this.settings.tileSize === 'undefined') {
+        this.settings.tileSize = 120;
+        // Save the migrated settings
+        const updatedData = await this.storage.loadData();
+        updatedData.settings = this.settings;
+        await this.storage.saveData(updatedData);
+      }
+      
       await this.applySettings();
       this.initClock();
       return true;
@@ -97,6 +107,7 @@ class SettingsManager {
   getDefaultSettings() {
     return {
       gridSize: 4,
+      tileSize: 120, // Default tile size in pixels (for both folders and links)
       theme: "dark",
       backgroundColor: "#1a202c",
       textColor: "#e2e8f0",
@@ -265,6 +276,9 @@ class SettingsManager {
       // Apply grid size
       root.style.setProperty("--grid-size", this.settings.gridSize);
 
+      // Apply tile size
+      root.style.setProperty("--folder-size", `${this.settings.tileSize}px`);
+
       // Apply accessibility settings
       if (this.settings.accessibility?.highContrast) {
         document.body.classList.add("high-contrast");
@@ -295,6 +309,7 @@ class SettingsManager {
   validateSetting(key, value) {
     const validations = {
       gridSize: (v) => Number.isInteger(v) && v >= 3 && v <= 8,
+      tileSize: (v) => Number.isInteger(v) && v >= 80 && v <= 200,
       theme: (v) =>
         typeof v === "string" &&
         (v === "auto" || this.themes[v] || v === "custom"),

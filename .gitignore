@@ -1,3 +1,9 @@
 build/
 build-ultra/
 dist/
+
+node_modules/
+
+backup/
+
+.vscode/

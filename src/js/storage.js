@@ -1,32 +1,32 @@
 // NeoTab - Chrome Storage API Integration Layer
 class StorageManager {
   constructor() {
-    this.storageKey = 'neotab_data';
+    this.storageKey = "neotab_data";
     this.defaultData = {
-  folders: [],
-  links: [],
-  rootOrder: [],
+      folders: [],
+      links: [],
+      rootOrder: [],
       meta: {
         lastTopSitesSync: 0,
-        topSitesSeeded: false
+        topSitesSeeded: false,
       },
       settings: {
         gridSize: 4,
-        theme: 'dark',
-        backgroundColor: '#1a202c',
-        textColor: '#e2e8f0',
-        primaryColor: '#63b3ed',
-        backgroundGradient: 'linear-gradient(135deg, #2d3748 0%, #4a5568 100%)',
+        theme: "dark",
+        backgroundColor: "#1a202c",
+        textColor: "#e2e8f0",
+        primaryColor: "#63b3ed",
+        backgroundGradient: "linear-gradient(135deg, #2d3748 0%, #4a5568 100%)",
         showClock: false,
-        clockFormat: '12h',
-        clockPosition: 'bottom-right',
+        clockFormat: "12h",
+        clockPosition: "bottom-right",
         customTheme: false,
         accessibility: {
           highContrast: false,
-          reducedMotion: false
-        }
+          reducedMotion: false,
+        },
       },
-      version: '1.0'
+      version: "1.0",
     };
   }
 
@@ -39,31 +39,36 @@ class StorageManager {
     try {
       // Validate data before saving
       if (!this.validateSchema(data)) {
-        throw new Error('Invalid data schema');
+        throw new Error("Invalid data schema");
       }
 
       // Sanitize input to prevent potential issues
       const sanitizedData = this.sanitizeInput(data);
-      
+
       // Check storage quota before saving (best-effort)
       await this.checkStorageQuota();
 
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.set) {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local &&
+        chrome.storage.local.set
+      ) {
         await chrome.storage.local.set({ [this.storageKey]: sanitizedData });
       } else {
         // Fallback to localStorage when running outside Chrome extension (dev in browser)
         localStorage.setItem(this.storageKey, JSON.stringify(sanitizedData));
       }
-      console.log('Data saved successfully');
+      console.log("Data saved successfully");
       return true;
     } catch (error) {
-      console.error('Error saving data:', error);
-      
+      console.error("Error saving data:", error);
+
       // Handle specific storage errors
-      if (error.message.includes('QUOTA_EXCEEDED')) {
+      if (error.message.includes("QUOTA_EXCEEDED")) {
         this.handleQuotaExceeded();
       }
-      
+
       return false;
     }
   }
@@ -75,7 +80,12 @@ class StorageManager {
   async loadData() {
     try {
       let storedData = null;
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.get) {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local &&
+        chrome.storage.local.get
+      ) {
         const result = await chrome.storage.local.get([this.storageKey]);
         storedData = result[this.storageKey];
       } else {
@@ -84,22 +94,22 @@ class StorageManager {
       }
 
       if (!storedData) {
-        console.log('No stored data found, using defaults');
+        console.log("No stored data found, using defaults");
         return this.defaultData;
       }
 
       // Validate stored data
       if (!this.validateSchema(storedData)) {
-        console.warn('Stored data schema invalid, using defaults');
+        console.warn("Stored data schema invalid, using defaults");
         return this.defaultData;
       }
 
       // Check for version migrations
       const migratedData = this.migrateData(storedData);
-      console.log('Data loaded successfully');
+      console.log("Data loaded successfully");
       return migratedData;
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error("Error loading data:", error);
       return this.defaultData;
     }
   }
@@ -112,7 +122,7 @@ class StorageManager {
   validateSchema(data) {
     try {
       // Check for required top-level properties
-      if (!data || typeof data !== 'object') {
+      if (!data || typeof data !== "object") {
         return false;
       }
 
@@ -125,45 +135,55 @@ class StorageManager {
         return false;
       }
 
-  if (!data.settings || typeof data.settings !== 'object') {
+      if (!data.settings || typeof data.settings !== "object") {
         return false;
       }
 
-      if (!data.version || typeof data.version !== 'string') {
+      if (!data.version || typeof data.version !== "string") {
         return false;
       }
 
       // meta is optional
-      if (data.meta && (typeof data.meta !== 'object' || typeof (data.meta.lastTopSitesSync ?? 0) !== 'number')) {
+      if (
+        data.meta &&
+        (typeof data.meta !== "object" ||
+          typeof (data.meta.lastTopSitesSync ?? 0) !== "number")
+      ) {
         return false;
       }
 
       // Validate settings structure
       const { settings } = data;
-      if (typeof settings.gridSize !== 'number' ||
-          typeof settings.backgroundColor !== 'string' ||
-          typeof settings.textColor !== 'string' ||
-          typeof settings.showClock !== 'boolean' ||
-          typeof settings.clockFormat !== 'string' ||
-          typeof settings.theme !== 'string') {
+      if (
+        typeof settings.gridSize !== "number" ||
+        typeof settings.backgroundColor !== "string" ||
+        typeof settings.textColor !== "string" ||
+        typeof settings.showClock !== "boolean" ||
+        typeof settings.clockFormat !== "string" ||
+        typeof settings.theme !== "string"
+      ) {
         return false;
       }
 
       // Validate accessibility settings if present
       if (settings.accessibility) {
-        if (typeof settings.accessibility !== 'object' ||
-            (settings.accessibility.highContrast !== undefined && typeof settings.accessibility.highContrast !== 'boolean') ||
-            (settings.accessibility.reducedMotion !== undefined && typeof settings.accessibility.reducedMotion !== 'boolean')) {
+        if (
+          typeof settings.accessibility !== "object" ||
+          (settings.accessibility.highContrast !== undefined &&
+            typeof settings.accessibility.highContrast !== "boolean") ||
+          (settings.accessibility.reducedMotion !== undefined &&
+            typeof settings.accessibility.reducedMotion !== "boolean")
+        ) {
           return false;
         }
       }
 
-  // Validate folders structure
+      // Validate folders structure
       for (const folder of data.folders) {
         if (!folder.id || !folder.name || !Array.isArray(folder.sites)) {
           return false;
         }
-        
+
         for (const site of folder.sites) {
           if (!site.id || !site.name || !site.url) {
             return false;
@@ -184,16 +204,16 @@ class StorageManager {
       if (data.rootOrder !== undefined) {
         if (!Array.isArray(data.rootOrder)) return false;
         for (const entry of data.rootOrder) {
-          if (!entry || typeof entry !== 'object') return false;
-          if (!('type' in entry) || !('id' in entry)) return false;
-          if (entry.type !== 'folder' && entry.type !== 'link') return false;
-          if (typeof entry.id !== 'string') return false;
+          if (!entry || typeof entry !== "object") return false;
+          if (!("type" in entry) || !("id" in entry)) return false;
+          if (entry.type !== "folder" && entry.type !== "link") return false;
+          if (typeof entry.id !== "string") return false;
         }
       }
 
       return true;
     } catch (error) {
-      console.error('Schema validation error:', error);
+      console.error("Schema validation error:", error);
       return false;
     }
   }
@@ -208,15 +228,15 @@ class StorageManager {
       // Deep clone to avoid modifying original
       const sanitized = JSON.parse(JSON.stringify(data));
 
-  // Sanitize folder names and site data
+      // Sanitize folder names and site data
       if (sanitized.folders) {
-        sanitized.folders.forEach(folder => {
+        sanitized.folders.forEach((folder) => {
           if (folder.name) {
             folder.name = this.escapeHtml(folder.name);
           }
-          
+
           if (folder.sites) {
-            folder.sites.forEach(site => {
+            folder.sites.forEach((site) => {
               if (site.name) {
                 site.name = this.escapeHtml(site.name);
               }
@@ -230,7 +250,7 @@ class StorageManager {
 
       // Sanitize root links
       if (sanitized.links) {
-        sanitized.links.forEach(link => {
+        sanitized.links.forEach((link) => {
           if (link.name) {
             link.name = this.escapeHtml(link.name);
           }
@@ -242,16 +262,19 @@ class StorageManager {
 
       // Clean rootOrder: remove entries whose targets no longer exist
       if (Array.isArray(sanitized.rootOrder)) {
-        const folderIds = new Set((sanitized.folders || []).map(f => f.id));
-        const linkIds = new Set((sanitized.links || []).map(l => l.id));
-        sanitized.rootOrder = sanitized.rootOrder.filter(e =>
-          e && ((e.type === 'folder' && folderIds.has(e.id)) || (e.type === 'link' && linkIds.has(e.id)))
+        const folderIds = new Set((sanitized.folders || []).map((f) => f.id));
+        const linkIds = new Set((sanitized.links || []).map((l) => l.id));
+        sanitized.rootOrder = sanitized.rootOrder.filter(
+          (e) =>
+            e &&
+            ((e.type === "folder" && folderIds.has(e.id)) ||
+              (e.type === "link" && linkIds.has(e.id)))
         );
       }
 
       return sanitized;
     } catch (error) {
-      console.error('Error sanitizing input:', error);
+      console.error("Error sanitizing input:", error);
       return data;
     }
   }
@@ -261,7 +284,7 @@ class StorageManager {
    * @returns {string} - Unique ID
    */
   generateId() {
-    return 'id_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    return "id_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
   }
 
   /**
@@ -271,31 +294,40 @@ class StorageManager {
    */
   migrateData(data) {
     try {
-      const currentVersion = '1.0';
-      
+      const currentVersion = "1.0";
+
       if (data.version === currentVersion) {
         // Ensure new optional fields exist
         const withLinks = Array.isArray(data.links) ? data.links : [];
         let rootOrder = Array.isArray(data.rootOrder) ? data.rootOrder : null;
         if (!rootOrder) {
           rootOrder = [
-            ...withLinks.map(l => ({ type: 'link', id: l.id })),
-            ...(Array.isArray(data.folders) ? data.folders.map(f => ({ type: 'folder', id: f.id })) : []),
+            ...withLinks.map((l) => ({ type: "link", id: l.id })),
+            ...(Array.isArray(data.folders)
+              ? data.folders.map((f) => ({ type: "folder", id: f.id }))
+              : []),
           ];
         }
-  return { ...data, links: withLinks, rootOrder, meta: data.meta || { lastTopSitesSync: 0, topSitesSeeded: false } };
+        return {
+          ...data,
+          links: withLinks,
+          rootOrder,
+          meta: data.meta || { lastTopSitesSync: 0, topSitesSeeded: false },
+        };
       }
 
-      console.log(`Migrating data from version ${data.version} to ${currentVersion}`);
-      
+      console.log(
+        `Migrating data from version ${data.version} to ${currentVersion}`
+      );
+
       // Add migration logic here for future versions
-  const migratedData = { ...data };
+      const migratedData = { ...data };
       migratedData.version = currentVersion;
 
       // Ensure all required settings exist
       migratedData.settings = {
         ...this.defaultData.settings,
-        ...migratedData.settings
+        ...migratedData.settings,
       };
 
       // Ensure links exists
@@ -304,21 +336,21 @@ class StorageManager {
       }
 
       // Ensure meta exists
-      if (!migratedData.meta || typeof migratedData.meta !== 'object') {
+      if (!migratedData.meta || typeof migratedData.meta !== "object") {
         migratedData.meta = { lastTopSitesSync: 0, topSitesSeeded: false };
       }
 
       // Ensure rootOrder exists
       if (!Array.isArray(migratedData.rootOrder)) {
         migratedData.rootOrder = [
-          ...migratedData.links.map(l => ({ type: 'link', id: l.id })),
-          ...migratedData.folders.map(f => ({ type: 'folder', id: f.id })),
+          ...migratedData.links.map((l) => ({ type: "link", id: l.id })),
+          ...migratedData.folders.map((f) => ({ type: "folder", id: f.id })),
         ];
       }
 
       return migratedData;
     } catch (error) {
-      console.error('Error migrating data:', error);
+      console.error("Error migrating data:", error);
       return this.defaultData;
     }
   }
@@ -328,27 +360,34 @@ class StorageManager {
    */
   async checkStorageQuota() {
     try {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.getBytesInUse) {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local &&
+        chrome.storage.local.getBytesInUse
+      ) {
         const bytesInUse = await chrome.storage.local.getBytesInUse();
         const quotaBytes = chrome.storage.local.QUOTA_BYTES || 5242880; // 5MB default
-        
+
         const usagePercent = (bytesInUse / quotaBytes) * 100;
-        
+
         if (usagePercent > 80) {
           console.warn(`Storage usage high: ${usagePercent.toFixed(1)}%`);
         }
       } else {
         // localStorage rough estimate
-        const raw = localStorage.getItem(this.storageKey) || '';
+        const raw = localStorage.getItem(this.storageKey) || "";
         const bytesInUse = new Blob([raw]).size;
         const quotaBytes = 5 * 1024 * 1024; // assume 5MB
         const usagePercent = (bytesInUse / quotaBytes) * 100;
         if (usagePercent > 80) {
-          console.warn(`Storage usage (localStorage) high: ${usagePercent.toFixed(1)}%`);
+          console.warn(
+            `Storage usage (localStorage) high: ${usagePercent.toFixed(1)}%`
+          );
         }
       }
     } catch (error) {
-      console.error('Error checking storage quota:', error);
+      console.error("Error checking storage quota:", error);
     }
   }
 
@@ -356,7 +395,7 @@ class StorageManager {
    * Handle quota exceeded errors
    */
   handleQuotaExceeded() {
-    console.error('Storage quota exceeded. Consider cleaning up old data.');
+    console.error("Storage quota exceeded. Consider cleaning up old data.");
     // Could implement automatic cleanup logic here
   }
 
@@ -365,15 +404,20 @@ class StorageManager {
    */
   async clearData() {
     try {
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.remove) {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local &&
+        chrome.storage.local.remove
+      ) {
         await chrome.storage.local.remove([this.storageKey]);
       } else {
         localStorage.removeItem(this.storageKey);
       }
-      console.log('Data cleared successfully');
+      console.log("Data cleared successfully");
       return true;
     } catch (error) {
-      console.error('Error clearing data:', error);
+      console.error("Error clearing data:", error);
       return false;
     }
   }
@@ -385,21 +429,26 @@ class StorageManager {
     try {
       let bytesInUse = 0;
       let quotaBytes = 5 * 1024 * 1024;
-      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local && chrome.storage.local.getBytesInUse) {
+      if (
+        typeof chrome !== "undefined" &&
+        chrome.storage &&
+        chrome.storage.local &&
+        chrome.storage.local.getBytesInUse
+      ) {
         bytesInUse = await chrome.storage.local.getBytesInUse();
         quotaBytes = chrome.storage.local.QUOTA_BYTES || 5242880;
       } else {
-        const raw = localStorage.getItem(this.storageKey) || '';
+        const raw = localStorage.getItem(this.storageKey) || "";
         bytesInUse = new Blob([raw]).size;
       }
-      
+
       return {
         bytesInUse,
         quotaBytes,
-        usagePercent: (bytesInUse / quotaBytes) * 100
+        usagePercent: (bytesInUse / quotaBytes) * 100,
       };
     } catch (error) {
-      console.error('Error getting storage stats:', error);
+      console.error("Error getting storage stats:", error);
       return null;
     }
   }
@@ -410,7 +459,7 @@ class StorageManager {
    * @returns {string} - Escaped text
    */
   escapeHtml(text) {
-    const div = document.createElement('div');
+    const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
   }
@@ -423,19 +472,24 @@ class StorageManager {
   sanitizeUrl(url) {
     try {
       // Allow only http, https, and chrome protocols
-      const allowedProtocols = ['http:', 'https:', 'chrome:', 'chrome-extension:'];
+      const allowedProtocols = [
+        "http:",
+        "https:",
+        "chrome:",
+        "chrome-extension:",
+      ];
       const urlObj = new URL(url);
-      
+
       if (allowedProtocols.includes(urlObj.protocol)) {
         return url;
       } else {
         // Default to https if no valid protocol
-        return 'https://' + url.replace(/^[^:]+:\/\//, '');
+        return "https://" + url.replace(/^[^:]+:\/\//, "");
       }
     } catch (error) {
       // If URL is invalid, try to fix it
-      if (!url.includes('://')) {
-        return 'https://' + url;
+      if (!url.includes("://")) {
+        return "https://" + url;
       }
       return url;
     }
@@ -452,7 +506,7 @@ class StorageManager {
       data.settings = { ...data.settings, ...settings };
       return await this.saveData(data);
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error("Error saving settings:", error);
       return false;
     }
   }
@@ -466,7 +520,7 @@ class StorageManager {
       const data = await this.loadData();
       return data.settings || this.defaultData.settings;
     } catch (error) {
-      console.error('Error loading settings:', error);
+      console.error("Error loading settings:", error);
       return this.defaultData.settings;
     }
   }
@@ -481,13 +535,13 @@ class StorageManager {
       data.settings = { ...this.defaultData.settings };
       return await this.saveData(data);
     } catch (error) {
-      console.error('Error resetting settings:', error);
+      console.error("Error resetting settings:", error);
       return false;
     }
   }
 }
 
 // Export for use in other modules
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   window.StorageManager = StorageManager;
 }

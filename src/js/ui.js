@@ -1952,6 +1952,14 @@ class UIManager {
                   <span class="range-value" id="grid-size-value">4</span>
                 </div>
               </div>
+              <div class="setting-group">
+                <label class="setting-label">Tile Size</label>
+                <div class="setting-description">Size of folder and link tiles in pixels</div>
+                <div class="setting-range">
+                  <input type="range" id="tile-size" min="80" max="200" step="10">
+                  <span class="range-value" id="tile-size-value">120</span>
+                </div>
+              </div>
             </div>
             
             <div class="settings-section" data-section="clock">
@@ -2127,6 +2135,12 @@ class UIManager {
     gridSize.value = settings.gridSize;
     gridSizeValue.textContent = settings.gridSize;
 
+    // Tile size
+    const tileSize = modal.querySelector("#tile-size");
+    const tileSizeValue = modal.querySelector("#tile-size-value");
+    tileSize.value = settings.tileSize || 120;
+    tileSizeValue.textContent = settings.tileSize || 120;
+
     // Custom theme
     modal.querySelector("#custom-theme").checked = settings.customTheme;
     modal.querySelector("#background-color").value = settings.backgroundColor;
@@ -2156,6 +2170,13 @@ class UIManager {
     const gridSizeValue = modal.querySelector("#grid-size-value");
     gridSize.addEventListener("input", () => {
       gridSizeValue.textContent = gridSize.value;
+    });
+
+    // Tile size slider
+    const tileSize = modal.querySelector("#tile-size");
+    const tileSizeValue = modal.querySelector("#tile-size-value");
+    tileSize.addEventListener("input", () => {
+      tileSizeValue.textContent = tileSize.value;
     });
 
     // Custom theme toggle
@@ -2237,6 +2258,9 @@ class UIManager {
 
       // Grid size
       newSettings.gridSize = parseInt(modal.querySelector("#grid-size").value);
+
+      // Tile size
+      newSettings.tileSize = parseInt(modal.querySelector("#tile-size").value);
 
       // Clock settings
       newSettings.showClock = modal.querySelector("#show-clock").checked;

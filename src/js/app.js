@@ -29,7 +29,10 @@ class NeoTabApp {
       await this.folderSystem.maybeSeedFromTopSites?.(12);
       // Run a periodic refresh after startup without blocking UI
       setTimeout(async () => {
-        const changed = await this.folderSystem.periodicTopSitesRefresh?.({ intervalHours: 24, cap: 24 });
+        const changed = await this.folderSystem.periodicTopSitesRefresh?.({
+          intervalHours: 24,
+          cap: 24,
+        });
         if (changed && this.ui) {
           const items = this.folderSystem.getRootItems?.();
           const grid = document.getElementById("folder-grid");
@@ -37,10 +40,15 @@ class NeoTabApp {
           if (!this.ui && grid && overlay) {
             this.ui = new UIManager(grid, overlay, this.folderSystem);
           }
-          this.ui?.renderGrid?.(this.folderSystem.getAllFolders?.() || [], this.folderSystem.getAllLinks?.() || []);
+          this.ui?.renderGrid?.(
+            this.folderSystem.getAllFolders?.() || [],
+            this.folderSystem.getAllLinks?.() || []
+          );
         }
       }, 100);
-    } catch (_) { /* ignore */ }
+    } catch (_) {
+      /* ignore */
+    }
 
     // Initialize UI after data is ready
     const grid = document.getElementById("folder-grid");
