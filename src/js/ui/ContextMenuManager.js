@@ -54,9 +54,6 @@ class ContextMenuManager extends ComponentManager {
       `;
     } else {
       menu.innerHTML = `
-        <div class="context-item" data-action="add-folder">
-          <span>Add Folder</span>
-        </div>
         <div class="context-item" data-action="add-link">
           <span>Add Link</span>
         </div>
@@ -147,9 +144,6 @@ class ContextMenuManager extends ComponentManager {
 
     try {
       switch (action) {
-        case "add-folder":
-          this.dialogManager.showAddFolderDialog();
-          break;
         case "add-link":
           this.dialogManager.showAddLinkDialog();
           break;

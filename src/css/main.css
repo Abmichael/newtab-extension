@@ -125,34 +125,6 @@ body.theme-light .clock-widget {
   z-index: 1000;
 }
 
-/* Add button */
-.add-button {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  background: var(--primary-color);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  padding: 12px 16px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: 0 6px 18px rgba(66, 133, 244, 0.35);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
-}
-
-.add-button .icon { font-size: 18px; }
-.add-button .label { line-height: 1; }
-
-.add-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(66, 133, 244, 0.5);
-}
-
 /* Responsive design */
 @media (max-width: 768px) {
   .header {
@@ -167,8 +139,6 @@ body.theme-light .clock-widget {
     /* Mobile: 2-3 columns depending on width */
     --gap-size: 16px;
   }
-
-  .add-button { bottom: 20px; right: 20px; }
 }
 
 /* Tablet */
@@ -284,20 +254,20 @@ body.theme-light .clock-widget {
 }
 
 .settings-header {
-  padding: 24px 24px 0;
+  padding: 24px 24px 12px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .settings-title {
   font-size: 24px;
   font-weight: 600;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .settings-tabs {
   display: flex;
   gap: 0;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .settings-tab {

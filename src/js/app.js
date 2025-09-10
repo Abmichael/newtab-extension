@@ -94,14 +94,6 @@ class NeoTabApp {
   }
 
   setupEventListeners() {
-    // Add button click handler
-    const addButton = document.getElementById("add-button");
-    if (addButton) {
-      addButton.addEventListener("click", () => {
-        this.ui?.showAddFolderDialog?.();
-      });
-    }
-
     // Settings button click handler
     const settingsButton = document.getElementById("settings-button");
     if (settingsButton) {
@@ -138,29 +130,8 @@ class NeoTabApp {
   }
 
   async handleAddFolder() {
-    // Use the UI dialog system for adding folders
-    if (this.ui) {
-      this.ui.showAddFolderDialog();
-    } else {
-      // Fallback for when UI isn't ready
-      try {
-        const folder = await this.folderSystem.createFolder("New Folder", {
-          color: "#4285f4",
-        });
-        // Keep local reference in sync
-        this.data = this.folderSystem.data;
-        // Re-render UI if available
-        this.ui?.renderGrid(this.data.folders, this.data.links || []);
-      } catch (e) {
-        if (window.errorHandler) {
-          window.errorHandler.handleError({
-            type: "folder_creation",
-            message: e.message,
-            stack: e.stack,
-          });
-        }
-      }
-    }
+    // Folder creation now only supported through drag and drop operations
+    console.warn("Direct folder creation disabled - use drag and drop to create folders");
   }
 
   /**

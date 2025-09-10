@@ -41,6 +41,18 @@ class UIManager {
     // Set up component event listeners and coordination
     this.initializeComponentEvents();
 
+    // Auto-refresh grid when underlying data changes (links/folders)
+    // Events emitted by DialogManager / other managers using emit('foldersChanged')
+    this.dialogManager.on('foldersChanged', () => {
+      try {
+        const folders = this.folderSystem.getAllFolders();
+        const links = this.folderSystem.getAllLinks?.() || [];
+        this.renderGrid(folders, links);
+      } catch (e) {
+        console.error('UIManager refresh after foldersChanged failed:', e);
+      }
+    });
+
     console.log('UIManager initialized with component composition');
   }
 
@@ -66,6 +78,10 @@ class UIManager {
     // Render manager events
     this.renderManager.on('folderCreated', (folder) => {
       // Handle folder creation events if needed
+    });
+
+    this.renderManager.on('addLinkRequested', () => {
+      this.dialogManager.showAddLinkDialog();
     });
 
     // Event handler coordination

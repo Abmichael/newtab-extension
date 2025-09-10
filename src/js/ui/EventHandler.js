@@ -131,12 +131,8 @@ class EventHandler extends ComponentManager {
         break;
       }
       case "Insert": {
-        if (e.ctrlKey || e.metaKey) {
-          if (this.delegates.dialog?.showAddFolderDialog) {
-            this.delegates.dialog.showAddFolderDialog();
-          }
-          e.preventDefault();
-        }
+        // Folder creation through DnD only - keyboard shortcut removed
+        e.preventDefault();
         break;
       }
       default:

@@ -120,7 +120,17 @@ class DragDropManager extends ComponentManager {
 
   async onDrop(event) {
     event.preventDefault();
-    const data = event.dataTransfer.getData("application/json");
+    // Support both native DragEvent and forwarded CustomEvent from PopoverManager.
+    // PopoverManager emits a CustomEvent('drop', { detail: originalDragEvent }) which
+    // lacks a dataTransfer on the outer event, causing previous TypeError.
+    const dragEvt = event.dataTransfer ? event : event.detail;
+    if (!dragEvt || !dragEvt.dataTransfer) {
+      // Not a usable drag/drop event; abort gracefully.
+      this.cleanupDnD();
+      return;
+    }
+
+    const data = dragEvt.dataTransfer.getData("application/json");
     if (!data) {
       this.cleanupDnD();
       return;
@@ -133,8 +143,17 @@ class DragDropManager extends ComponentManager {
       return;
     }
 
-    const dropFolder = event.target.closest(".folder-item");
-    const dropLink = event.target.closest(".link-item");
+    // Determine drop target. For forwarded events, the event target will be the container
+    // (since the CustomEvent was dispatched there). Use elementFromPoint to locate the
+    // underlying element at the drop coordinates.
+    let baseTarget = event.target;
+    if (dragEvt !== event && typeof dragEvt.clientX === 'number' && typeof dragEvt.clientY === 'number') {
+      const elBelow = document.elementFromPoint(dragEvt.clientX, dragEvt.clientY);
+      if (elBelow) baseTarget = elBelow;
+    }
+
+    const dropFolder = baseTarget?.closest?.(".folder-item");
+    const dropLink = baseTarget?.closest?.(".link-item");
 
     try {
       if (payload.type === "site") {

@@ -56,20 +56,19 @@
   height: 22px;
 }
 
-/* Theme-colored hover accent on folder icons */
+/* Blue hover effect on folder preview icons disabled per user request */
+/* 
 .folder-button:hover .folder-preview-icon {
-  /* Fallback ring using primary color */
   box-shadow: inset 0 0 0 2px var(--primary-color);
-  /* Prefer themed tint and softer ring when supported */
   background: color-mix(in srgb, var(--primary-color) 18%, transparent);
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary-color) 40%, transparent);
 }
 
-/* Theme-colored hover accent on folder icons */
 .folder-button:hover .folder-preview-icon {
   background: color-mix(in srgb, var(--primary-color) 18%, transparent);
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--primary-color) 40%, transparent);
 }
+*/
 
 /* Deprecated: .site-tile is no longer used; kept for compatibility */
 .site-tile { display: none; }
@@ -168,7 +167,7 @@ body.theme-light .folder-overlay {
 
 .folder-popover .site-grid {
   padding: 12px 14px 14px 14px;
-  overflow: auto;
+  overflow: hidden;
   flex: 1 1 auto;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--folder-size), 1fr));
@@ -232,7 +231,7 @@ body.theme-light .folder-overlay {
   box-shadow: 0 12px 30px rgba(0,0,0,0.12);
   backdrop-filter: blur(6px);
   padding: 20px;
-  overflow: auto;
+  overflow: hidden;
 }
 
 /* Inside modal: grid of site tiles */
@@ -396,6 +395,31 @@ body.theme-light .folder-overlay {
   cursor: pointer;
 }
 
+.dialog-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(0, 0, 0, 0.14);
+  border-radius: 6px;
+  background: #ffffff;
+  color: var(--text-color);
+  font-size: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.dialog-field select:focus {
+  outline: none;
+  border-color: #4285f4;
+  background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.18);
+}
+
 .dialog-buttons {
   padding: 0 20px 20px 20px;
   display: flex;
@@ -460,6 +484,12 @@ body.theme-light .folder-overlay {
   opacity: 0.9;
   cursor: pointer;
   transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+}
+
+/* Light theme specific styles for add tile */
+body.theme-light .add-tile {
+  border-color: rgba(0, 0, 0, 0.3);
+  color: #666;
 }
 .add-tile:hover, .add-tile:focus-visible {
   transform: translateY(-2px);

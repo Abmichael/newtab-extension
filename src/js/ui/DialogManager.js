@@ -8,48 +8,6 @@ class DialogManager extends ComponentManager {
 
   // ============ Public Dialog Methods ============
 
-  showAddFolderDialog() {
-    const dialog = this.createDialog(
-      "Add Folder",
-      `
-      <div class="dialog-field">
-        <label for="folder-name">Folder Name:</label>
-        <input type="text" id="folder-name" placeholder="Enter folder name" />
-      </div>
-      <div class="dialog-field">
-        <label for="folder-color">Color:</label>
-        <input type="color" id="folder-color" value="#4285f4" />
-      </div>
-    `,
-      [
-        { text: "Cancel", action: "cancel" },
-        { text: "Create", action: "create", primary: true },
-      ]
-    );
-
-    dialog.addEventListener("action", (e) => {
-      if (e.detail.action === "create") {
-        const name = dialog.querySelector("#folder-name").value.trim();
-        const color = dialog.querySelector("#folder-color").value;
-
-        if (name) {
-          try {
-            this.folderSystem.createFolder(name, color);
-            this.emit('foldersChanged');
-            console.log(`Folder "${name}" created successfully`);
-          } catch (error) {
-            console.error("Error creating folder:", error);
-            alert("Failed to create folder. Please try again.");
-          }
-        } else {
-          alert("Please enter a folder name.");
-          return; // Don't close dialog
-        }
-      }
-      this.closeDialog();
-    });
-  }
-
   showEditFolderDialog(folderId) {
     const folder = this.folderSystem.getFolderById(folderId);
     if (!folder) return;
@@ -175,24 +133,9 @@ class DialogManager extends ComponentManager {
       "Add Link",
       `
       <div class="dialog-field">
-        <label for="link-name">Name</label>
-        <input type="text" id="link-name" placeholder="Enter name" />
-      </div>
-      <div class="dialog-field">
         <label for="link-url">URL</label>
         <input type="url" id="link-url" placeholder="https://example.com" />
-      </div>
-      <div class="dialog-field">
-        <label for="link-location">Location</label>
-        <select id="link-location">
-          <option value="root" selected>Home grid</option>
-          ${this.folderSystem
-            .getAllFolders()
-            .map(
-              (f) => `<option value="folder:${f.id}">Folder: ${f.name}</option>`
-            )
-            .join("")}
-        </select>
+        <small class="hint">Title will be fetched automatically.</small>
       </div>
     `,
       [
@@ -201,27 +144,60 @@ class DialogManager extends ComponentManager {
       ]
     );
 
+    const addBtn = dialog.querySelector('[data-action="add"]');
+    const urlInput = dialog.querySelector('#link-url');
+
+    // Helper: fetch page title (fallback to hostname)
+    const resolveTitle = async (url) => {
+      // Basic validation first
+      let u;
+      try { u = new URL(url); } catch { throw new Error('Invalid URL'); }
+      try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 4000);
+        const res = await fetch(u.href, { signal: controller.signal, mode: 'cors' });
+        clearTimeout(timeout);
+        if (!res.ok) throw new Error('Bad status');
+        const text = await res.text();
+        const match = text.match(/<title[^>]*>([^<]*)<\/title>/i);
+        if (match) {
+          const title = match[1].trim();
+          if (title) return title.slice(0, 120);
+        }
+      } catch (e) {
+        // Ignore fetch/parsing errors; we'll fallback
+      }
+      return u.hostname.replace(/^www\./, '');
+    };
+
+    const setLoading = (loading) => {
+      if (loading) {
+        addBtn.disabled = true;
+        addBtn.dataset.originalText = addBtn.textContent;
+        addBtn.textContent = 'Adding...';
+      } else {
+        addBtn.disabled = false;
+        if (addBtn.dataset.originalText) addBtn.textContent = addBtn.dataset.originalText;
+      }
+    };
+
     dialog.addEventListener("action", async (e) => {
       if (e.detail.action === "add") {
-        const name = dialog.querySelector("#link-name").value.trim();
-        const url = dialog.querySelector("#link-url").value.trim();
-        const loc = dialog.querySelector("#link-location").value;
-        if (!name || !url) {
-          alert("Please enter both name and URL.");
-          return;
+        const url = urlInput.value.trim();
+        if (!url) {
+          alert("Please enter a URL.");
+          return; // keep dialog open
         }
+        setLoading(true);
         try {
-          if (loc === "root") {
-            await this.folderSystem.addRootLink({ name, url });
-          } else if (loc.startsWith("folder:")) {
-            const folderId = loc.slice("folder:".length);
-            await this.folderSystem.addSiteToFolder(folderId, { name, url });
-          }
+          const title = await resolveTitle(url);
+          await this.folderSystem.addRootLink({ name: title, url });
           this.emit('foldersChanged');
         } catch (err) {
-          console.error("Failed to add link:", err);
-          alert("Failed to add link. Please check the URL and try again.");
-          return;
+          console.error('Failed to add link:', err);
+          alert(err.message === 'Invalid URL' ? 'Invalid URL. Please check and try again.' : 'Failed to fetch page title. Link not added.');
+          setLoading(false);
+          return; // keep dialog open on failure
         }
       }
       this.closeDialog();
