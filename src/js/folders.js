@@ -91,9 +91,25 @@ class FolderSystem {
         await this.save();
         return false;
       }
+      
+      // Get all existing hosts to prevent duplicates (comprehensive check)
+      const existingHosts = this.getAllExistingHosts();
+      
       const picked = sites.slice(0, maxLinks);
       for (const s of picked) {
+        // Check for duplicates before adding
+        let host;
+        try {
+          host = new URL(s.url).hostname;
+        } catch {
+          host = s.url;
+        }
+        
+        // Skip if this host already exists anywhere in the system
+        if (existingHosts.has(host)) continue;
+        
         await this.addRootLink({ name: s.title || s.url, url: s.url });
+        existingHosts.add(host); // Track newly added hosts
       }
       this.data.meta.topSitesSeeded = true;
       this.data.meta.lastTopSitesSync = Date.now();
@@ -115,16 +131,10 @@ class FolderSystem {
       if (now - last < intervalMs) return false;
       const sites = await this.fetchTopSites();
       if (!sites.length) return false;
-      // Deduplicate by hostname; keep existing if present
-      const existingHosts = new Set(
-        this.links.map((l) => {
-          try {
-            return new URL(l.url).hostname;
-          } catch {
-            return l.url;
-          }
-        })
-      );
+      
+      // Get all existing hosts from both root links AND folder sites
+      const existingHosts = this.getAllExistingHosts();
+      
       let added = 0;
       for (const s of sites) {
         if (added >= (options.cap || 24)) break;
@@ -152,6 +162,42 @@ class FolderSystem {
     return typeof this.storage.generateId === "function"
       ? this.storage.generateId()
       : "id_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
+  }
+
+  /**
+   * Get all existing hostnames from both root links and folder sites
+   * @returns {Set<string>} Set of hostnames that already exist in the system
+   */
+  getAllExistingHosts() {
+    const hosts = new Set();
+    
+    // Add root-level links
+    this.links.forEach((link) => {
+      try {
+        const hostname = new URL(link.url).hostname;
+        hosts.add(hostname);
+      } catch {
+        // If URL parsing fails, use the raw URL as fallback
+        hosts.add(link.url);
+      }
+    });
+    
+    // Add sites from all folders
+    this.folders.forEach((folder) => {
+      if (Array.isArray(folder.sites)) {
+        folder.sites.forEach((site) => {
+          try {
+            const hostname = new URL(site.url).hostname;
+            hosts.add(hostname);
+          } catch {
+            // If URL parsing fails, use the raw URL as fallback
+            hosts.add(site.url);
+          }
+        });
+      }
+    });
+    
+    return hosts;
   }
 
   /** Sanitize text */
@@ -534,11 +580,25 @@ class FolderSystem {
   /** Generate a favicon URL from a site URL */
   generateFaviconUrl(url) {
     try {
-      const u = new URL(url);
-      // Use DuckDuckGo favicon service for reliable icons
-      return `https://icons.duckduckgo.com/ip3/${u.hostname}.ico`;
+      // Use Chrome Extension Favicon API (requires "favicon" permission)
+      const faviconBaseUrl = new URL(chrome.runtime.getURL("/_favicon/"));
+      faviconBaseUrl.searchParams.set("pageUrl", url);
+      faviconBaseUrl.searchParams.set("size", "32");
+      return faviconBaseUrl.toString();
     } catch (e) {
-      return "https://icons.duckduckgo.com/ip3/duckduckgo.com.ico";
+      // Fallback for invalid URLs or when chrome.runtime is not available
+      return this.generateFallbackFaviconUrl(url);
+    }
+  }
+
+  /** Generate a fallback favicon URL for browsers that don't support chrome://favicon */
+  generateFallbackFaviconUrl(url) {
+    try {
+      const u = new URL(url);
+      // Use Google's favicon service as fallback
+      return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=32`;
+    } catch (e) {
+      return "https://www.google.com/s2/favicons?domain=duckduckgo.com&sz=32";
     }
   }
 

@@ -40,9 +40,12 @@ class EventHandler extends ComponentManager {
     const item = button?.closest?.(".folder-item");
     
     if (!button || !item) {
-      // Click outside any folder tile closes current popover
+      // Click outside any folder tile closes current popover and context menu
       if (this.delegates.popover?.closeFolderPopover) {
         this.delegates.popover.closeFolderPopover();
+      }
+      if (this.delegates.contextMenu?.closeContextMenu) {
+        this.delegates.contextMenu.closeContextMenu();
       }
       return;
     }
@@ -50,6 +53,11 @@ class EventHandler extends ComponentManager {
     const id = item.dataset.folderId;
     const folder = this.folderSystem.getFolderById(id);
     if (!folder) return;
+    
+    // Close any open context menu when clicking on folders
+    if (this.delegates.contextMenu?.closeContextMenu) {
+      this.delegates.contextMenu.closeContextMenu();
+    }
     
     // Toggle if same button clicked again
     if (this.delegates.popover?.currentPopover && 
@@ -141,8 +149,13 @@ class EventHandler extends ComponentManager {
   }
 
   handleOverlayClick(e) {
-    if (e.target === this.overlay && this.delegates.popover?.closeFolderPopover) {
-      this.delegates.popover.closeFolderPopover();
+    if (e.target === this.overlay) {
+      if (this.delegates.popover?.closeFolderPopover) {
+        this.delegates.popover.closeFolderPopover();
+      }
+      if (this.delegates.contextMenu?.closeContextMenu) {
+        this.delegates.contextMenu.closeContextMenu();
+      }
     }
   }
 
@@ -150,6 +163,9 @@ class EventHandler extends ComponentManager {
     if (e.key === "Escape") {
       if (this.delegates.popover?.closeFolderPopover) {
         this.delegates.popover.closeFolderPopover();
+      }
+      if (this.delegates.contextMenu?.closeContextMenu) {
+        this.delegates.contextMenu.closeContextMenu();
       }
     }
   }

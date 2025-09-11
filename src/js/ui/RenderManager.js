@@ -144,6 +144,13 @@ class RenderManager extends ComponentManager {
         img.src = src;
         img.loading = "lazy";
         img.alt = previews[i].name || "Site";
+        
+        // Add error handler for favicon fallback
+        img.onerror = () => {
+          // If the extension favicon API fails, use Google's service
+          img.src = this.folderSystem.generateFallbackFaviconUrl(url);
+        };
+        
         slot.appendChild(img);
       }
       wrapper.appendChild(slot);
@@ -196,6 +203,13 @@ class RenderManager extends ComponentManager {
     img.src = favicon;
     img.loading = "lazy";
     img.alt = link.name || "Link";
+    
+    // Add error handler for favicon fallback
+    img.onerror = () => {
+      // If the extension favicon API fails, use Google's service
+      img.src = this.folderSystem.generateFallbackFaviconUrl(link.url);
+    };
+    
     button.appendChild(img);
 
     const label = document.createElement("div");

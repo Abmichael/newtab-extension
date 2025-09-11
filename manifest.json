@@ -10,7 +10,7 @@
     "newtab": "index.html"
   },
 
-  "permissions": ["storage", "topSites", "host_permissions"],
+  "permissions": ["storage", "topSites", "favicon"],
   
   "host_permissions": ["https://*/*", "http://*/*"],
 

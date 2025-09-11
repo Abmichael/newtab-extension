@@ -35,15 +35,19 @@
     if(!logoSrc){
       try {
         const u = new URL(engine.template.replace('{query}','test'));
-        // Use same favicon generation strategy as links: simple Google S2 or fallback /favicon.ico
-        logoSrc = `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=64`;
+        // Use Chrome Extension Favicon API for better accuracy
+        const faviconBaseUrl = new URL(chrome.runtime.getURL("/_favicon/"));
+        faviconBaseUrl.searchParams.set("pageUrl", u.origin);
+        faviconBaseUrl.searchParams.set("size", "32");
+        logoSrc = faviconBaseUrl.toString();
       } catch(_) {
-        logoSrc = 'icons/search-engines/duckduckgo.png';
+        logoSrc = 'icons/search-engines/duckduckgo.svg';
       }
     }
     form.innerHTML = `
       <span class="engine-badge" title="Search engine">
-        <img src="${logoSrc}" alt="${engine.name} logo" style="width:18px;height:18px;object-fit:contain;border-radius:4px;" />
+        <img src="${logoSrc}" alt="${engine.name} logo" style="width:18px;height:18px;object-fit:contain;border-radius:4px;" 
+             onerror="this.src='https://www.google.com/s2/favicons?domain=' + new URL('${engine.template.replace('{query}','test')}').hostname + '&sz=32';" />
       </span>
       <input type="text" id="neotab-search-input" placeholder="Search the web" aria-label="Search" />
       <button class="nt-btn nt-btn-primary search-submit" type="submit" aria-label="Search submit">Search</button>

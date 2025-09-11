@@ -11,6 +11,8 @@ class ContextMenuManager extends ComponentManager {
     super(container, folderSystem);
     this.dialogManager = dialogManager;
     this.currentContextMenu = null;
+    this.documentClickHandler = null;
+    this.documentKeyHandler = null;
   }
 
   /**
@@ -120,6 +122,25 @@ class ContextMenuManager extends ComponentManager {
       }
       this.closeContextMenu();
     });
+
+    // Add document click listener to close menu when clicking outside
+    // Use setTimeout to prevent immediate closure from the same click event that opened the menu
+    setTimeout(() => {
+      this.documentClickHandler = (e) => {
+        if (!menu.contains(e.target)) {
+          this.closeContextMenu();
+        }
+      };
+      document.addEventListener("click", this.documentClickHandler);
+    }, 0);
+
+    // Add escape key listener to close menu
+    this.documentKeyHandler = (e) => {
+      if (e.key === "Escape") {
+        this.closeContextMenu();
+      }
+    };
+    document.addEventListener("keydown", this.documentKeyHandler);
   }
 
   /**
@@ -129,6 +150,17 @@ class ContextMenuManager extends ComponentManager {
     if (this.currentContextMenu) {
       this.currentContextMenu.remove();
       this.currentContextMenu = null;
+      
+      // Remove document-level event listeners
+      if (this.documentClickHandler) {
+        document.removeEventListener("click", this.documentClickHandler);
+        this.documentClickHandler = null;
+      }
+      if (this.documentKeyHandler) {
+        document.removeEventListener("keydown", this.documentKeyHandler);
+        this.documentKeyHandler = null;
+      }
+      
       this.emit('menuClosed'); // Emit event for coordination
     }
   }
