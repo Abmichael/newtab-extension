@@ -96,10 +96,145 @@ body.theme-light .clock-widget {
 /* Main content */
 .main-content {
   flex: 1;
+  flex-direction: column;
   display: flex;
   justify-content: center;
   align-items: center;
   padding: 40px;
+}
+
+/* Search bar container */
+.search-bar {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 0 32px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.search-bar form {
+  flex: 1;
+  display: flex;
+  max-width: 600px;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 28px;
+  overflow: hidden;
+  transition: box-shadow 0.2s ease, background 0.3s ease;
+}
+
+body.theme-light .search-bar form {
+  background: rgba(255,255,255,0.65);
+  border-color: rgba(0,0,0,0.12);
+}
+
+.search-bar form:focus-within {
+  box-shadow: 0 0 0 3px rgba(66,133,244,0.35);
+}
+
+.search-bar input[type="text"] {
+  flex: 1;
+  padding: 14px 18px;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  color: var(--text-color);
+}
+
+body.theme-light .search-bar input[type="text"] {
+  color: #1f2937;
+}
+
+/* Global button styles */
+.nt-btn {
+  --btn-bg: rgba(255,255,255,0.12);
+  --btn-border: rgba(255,255,255,0.2);
+  --btn-color: var(--text-color);
+  --btn-hover-bg: rgba(255,255,255,0.2);
+  -webkit-appearance: none;
+  appearance: none;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-color);
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.1;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 24px;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease, box-shadow .18s ease;
+  position: relative;
+}
+.nt-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(66,133,244,0.5);
+}
+.nt-btn:hover {
+  background: var(--btn-hover-bg);
+}
+.nt-btn-primary {
+  --btn-bg: var(--primary-color);
+  --btn-border: var(--primary-color);
+  --btn-color: #fff;
+  --btn-hover-bg: linear-gradient(135deg, rgba(255,255,255,0.15), rgba(255,255,255,0.05)), var(--primary-color);
+}
+.nt-btn-danger {
+  --btn-bg: #d93025;
+  --btn-border: #d93025;
+  --btn-color: #fff;
+  --btn-hover-bg: linear-gradient(135deg, rgba(0,0,0,0.15), rgba(0,0,0,0.05)), #d93025;
+}
+body.theme-light .nt-btn {
+  --btn-bg: rgba(0,0,0,0.05);
+  --btn-border: rgba(0,0,0,0.15);
+  --btn-color: #1f2937;
+  --btn-hover-bg: rgba(0,0,0,0.08);
+}
+body.theme-light .nt-btn-primary {
+  --btn-bg: var(--primary-color);
+  --btn-border: var(--primary-color);
+  --btn-color: #fff;
+  --btn-hover-bg: linear-gradient(135deg, rgba(255,255,255,0.3), rgba(255,255,255,0.15)), var(--primary-color);
+}
+body.theme-light .nt-btn-danger {
+  --btn-bg: #d93025;
+  --btn-border: #d93025;
+  --btn-color: #fff;
+  --btn-hover-bg: linear-gradient(135deg, rgba(255,255,255,0.25), rgba(255,255,255,0.1)), #d93025;
+}
+
+/* Search bar submit inherits nt-btn */
+.search-bar .search-submit {
+  border-radius: 0;
+  padding: 0 22px;
+  height: 100%;
+  border: none;
+}
+.search-bar .search-submit:hover { opacity: 0.9; }
+
+.search-bar .engine-badge {
+  background: rgba(255,255,255,0.1);
+  color: var(--text-color);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 16px;
+  margin-right: 12px;
+  align-self: center;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.search-bar .engine-badge { min-width: 34px; justify-content: center; }
+.search-bar .engine-badge img { display:block; }
+
+body.theme-light .search-bar .engine-badge {
+  background: rgba(0,0,0,0.06);
+  color: #1f2937;
 }
 
 /* Folder grid - Flex layout: left aligned, wrapping, fixed spacing */
@@ -388,6 +523,23 @@ body.theme-light .clock-widget {
   gap: 12px;
   margin-top: 12px;
 }
+
+.theme-live-preview {
+  width: 100%;
+  height: 90px;
+  border-radius: 12px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background: var(--background-gradient, var(--bg-color));
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.25) inset;
+}
+.theme-live-preview .tlp-bg { display:flex; gap:10px; padding:14px 18px; width:100%; }
+.theme-live-preview .tlp-tile { width:46px; height:46px; border-radius:12px; background:rgba(255,255,255,0.15); border:2px solid rgba(255,255,255,0.25); backdrop-filter: blur(4px); }
+body.theme-light .theme-live-preview { border-color: rgba(0,0,0,0.08); }
 
 .theme-option {
   padding: 16px;

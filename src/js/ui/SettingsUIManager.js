@@ -27,6 +27,7 @@ class SettingsUIManager extends ComponentManager {
               <button class="settings-tab" data-tab="layout">Layout</button>
               <button class="settings-tab" data-tab="clock">Clock</button>
               <button class="settings-tab" data-tab="accessibility">Accessibility</button>
+              <button class="settings-tab" data-tab="search">Search</button>
               <button class="settings-tab" data-tab="data">Data</button>
             </div>
           </div>
@@ -35,6 +36,13 @@ class SettingsUIManager extends ComponentManager {
               <div class="setting-group">
                 <label class="setting-label">Theme</label>
                 <div class="setting-description">Choose a pre-built theme or create your own</div>
+                <div class="theme-live-preview" id="theme-live-preview">
+                  <div class="tlp-bg">
+                    <div class="tlp-tile" aria-hidden="true"></div>
+                    <div class="tlp-tile" aria-hidden="true"></div>
+                    <div class="tlp-tile" aria-hidden="true"></div>
+                  </div>
+                </div>
                 <div class="theme-preview" id="theme-preview"></div>
               </div>
               <div class="setting-group">
@@ -117,29 +125,53 @@ class SettingsUIManager extends ComponentManager {
                 </div>
               </div>
             </div>
+            <div class="settings-section" data-section="search">
+              <div class="setting-group">
+                <label class="setting-label">Search Engine</label>
+                <div class="setting-description">Choose or define the search engine used by the search bar</div>
+                <select class="setting-select" id="search-engine-select">
+                  <option value="duckduckgo">DuckDuckGo</option>
+                  <option value="google">Google</option>
+                  <option value="bing">Bing</option>
+                  <option value="brave">Brave</option>
+                  <option value="custom">Custom...</option>
+                </select>
+              </div>
+              <div class="setting-group" id="custom-search-group" style="display:none;">
+                <label class="setting-label">Custom Name</label>
+                <input type="text" class="setting-input" id="custom-search-name" placeholder="MyEngine">
+                <label class="setting-label">Custom URL Template</label>
+                <div class="setting-description">Use {query} placeholder for the search term.</div>
+                <input type="text" class="setting-input" id="custom-search-template" placeholder="https://example.com/search?q={query}">
+              </div>
+              <div class="setting-group">
+                <label class="setting-label">Preview</label>
+                <div class="setting-description" id="search-preview">https://duckduckgo.com/?q={query}</div>
+              </div>
+            </div>
             
             <div class="settings-section" data-section="data">
               <div class="setting-group">
                 <label class="setting-label">Export Data</label>
                 <div class="setting-description">Download all your folders and settings as a backup file</div>
-                <button class="setting-button" id="export-data">Export Data</button>
+                <button class="nt-btn" id="export-data">Export Data</button>
               </div>
               <div class="setting-group">
                 <label class="setting-label">Import Data</label>
                 <div class="setting-description">Restore from a backup file (this will replace all current data)</div>
                 <input type="file" class="setting-file" id="import-file" accept=".json" style="display: none;">
-                <button class="setting-button" id="import-data">Import Data</button>
+                <button class="nt-btn" id="import-data">Import Data</button>
               </div>
               <div class="setting-group">
                 <label class="setting-label">Reset Settings</label>
                 <div class="setting-description">Reset all settings to default values (folders will be preserved)</div>
-                <button class="setting-button setting-button-danger" id="reset-settings">Reset to Defaults</button>
+                <button class="nt-btn nt-btn-danger" id="reset-settings">Reset to Defaults</button>
               </div>
             </div>
           </div>
           <div class="settings-footer">
-            <button class="setting-button setting-button-secondary" id="cancel-settings">Cancel</button>
-            <button class="setting-button setting-button-primary" id="save-settings">Save Changes</button>
+            <button class="nt-btn" id="cancel-settings">Cancel</button>
+            <button class="nt-btn nt-btn-primary" id="save-settings">Save Changes</button>
           </div>
         </div>
       </div>
@@ -210,7 +242,21 @@ class SettingsUIManager extends ComponentManager {
    */
   populateThemePreview(modal, settings) {
     const themePreview = modal.querySelector("#theme-preview");
+    const livePreview = modal.querySelector('#theme-live-preview');
     const themes = this.settingsManager.themes;
+
+    const applyLive = (themeData) => {
+      if(!livePreview) return;
+      livePreview.style.background = themeData.backgroundGradient || themeData.backgroundColor;
+      livePreview.querySelectorAll('.tlp-tile').forEach((el,i)=>{
+        el.style.background = i===0 ? themeData.primaryColor : 'rgba(255,255,255,0.15)';
+        el.style.borderColor = themeData.primaryColor;
+      });
+    };
+
+    // Initialize with current theme
+    const currentKey = settings.theme === 'auto' ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark':'light') : settings.theme;
+    if(themes[currentKey]) applyLive(themes[currentKey]);
 
     Object.entries(themes).forEach(([themeName, themeData]) => {
       const themeOption = document.createElement("div");
@@ -232,11 +278,16 @@ class SettingsUIManager extends ComponentManager {
         <span class="theme-name">${themeName.charAt(0).toUpperCase() + themeName.slice(1)}</span>
       `;
 
+      themeOption.addEventListener("mouseenter", () => {
+        applyLive(themeData);
+      });
+
       themeOption.addEventListener("click", () => {
         modal.querySelectorAll(".theme-option").forEach(opt => opt.classList.remove("active"));
         themeOption.classList.add("active");
         modal.querySelector("#custom-theme").checked = false;
         modal.querySelector("#custom-colors").style.display = "none";
+        applyLive(themeData);
       });
 
       themePreview.appendChild(themeOption);
@@ -277,6 +328,31 @@ class SettingsUIManager extends ComponentManager {
     modal.querySelector("#high-contrast").checked = settings.highContrast || false;
     modal.querySelector("#font-scale").value = settings.fontScale || 1.0;
     modal.querySelector("#font-scale-value").textContent = `${Math.round((settings.fontScale || 1.0) * 100)}%`;
+
+    // Search engine
+    const engine = settings.searchEngine || { name: 'DuckDuckGo', template: 'https://duckduckgo.com/?q={query}' };
+    const select = modal.querySelector('#search-engine-select');
+    const customGroup = modal.querySelector('#custom-search-group');
+    const customName = modal.querySelector('#custom-search-name');
+    const customTemplate = modal.querySelector('#custom-search-template');
+    const preview = modal.querySelector('#search-preview');
+    const known = {
+      'https://duckduckgo.com/?q={query}': 'duckduckgo',
+      'https://www.google.com/search?q={query}': 'google',
+      'https://www.bing.com/search?q={query}': 'bing',
+      'https://search.brave.com/search?q={query}': 'brave'
+    };
+    const key = known[engine.template];
+    if(key){
+      select.value = key;
+      customGroup.style.display = 'none';
+    } else {
+      select.value = 'custom';
+      customGroup.style.display = 'block';
+      customName.value = engine.name || '';
+      customTemplate.value = engine.template || '';
+    }
+    preview.textContent = engine.template;
   }
 
   /**
@@ -339,6 +415,31 @@ class SettingsUIManager extends ComponentManager {
     modal.querySelector("#reset-settings").addEventListener("click", () => {
       this.resetSettings(modal);
     });
+
+    // Search engine events
+    const select = modal.querySelector('#search-engine-select');
+    const customGroup = modal.querySelector('#custom-search-group');
+    const customName = modal.querySelector('#custom-search-name');
+    const customTemplate = modal.querySelector('#custom-search-template');
+    const preview = modal.querySelector('#search-preview');
+    const templates = {
+      duckduckgo: 'https://duckduckgo.com/?q={query}',
+      google: 'https://www.google.com/search?q={query}',
+      bing: 'https://www.bing.com/search?q={query}',
+      brave: 'https://search.brave.com/search?q={query}'
+    };
+    select.addEventListener('change', ()=>{
+      if(select.value === 'custom'){
+        customGroup.style.display = 'block';
+        preview.textContent = customTemplate.value || 'https://example.com/search?q={query}';
+      } else {
+        customGroup.style.display = 'none';
+        preview.textContent = templates[select.value];
+      }
+    });
+    customTemplate.addEventListener('input', ()=>{
+      if(select.value === 'custom') preview.textContent = customTemplate.value;
+    });
   }
 
   /**
@@ -376,12 +477,34 @@ class SettingsUIManager extends ComponentManager {
       newSettings.highContrast = modal.querySelector("#high-contrast").checked;
       newSettings.fontScale = parseFloat(modal.querySelector("#font-scale").value);
 
+      // Search engine settings
+      const engineSelect = modal.querySelector('#search-engine-select').value;
+      if(engineSelect === 'custom'){
+        const name = (modal.querySelector('#custom-search-name').value || 'Custom').trim();
+        const template = modal.querySelector('#custom-search-template').value.trim();
+        if(template.includes('{query}')){
+          newSettings.searchEngine = { name, template };
+        }
+      } else {
+        const map = {
+          duckduckgo: { name: 'DuckDuckGo', template: 'https://duckduckgo.com/?q={query}' },
+          google: { name: 'Google', template: 'https://www.google.com/search?q={query}' },
+          bing: { name: 'Bing', template: 'https://www.bing.com/search?q={query}' },
+          brave: { name: 'Brave', template: 'https://search.brave.com/search?q={query}' }
+        };
+        newSettings.searchEngine = map[engineSelect];
+      }
+
       // Delegate actual settings save to SettingsManager
       await this.settingsManager.updateSettings(newSettings);
       
       this.closeSettingsModal();
       this.emit('notification', { message: 'Settings saved successfully!', type: 'success' });
       this.emit('settingsChanged', newSettings);
+      // Refresh search bar if component hook available
+      if(typeof window.__neotabSearchRefresh === 'function' && newSettings.searchEngine){
+        window.__neotabSearchRefresh();
+      }
     } catch (error) {
       console.error("Failed to save settings:", error);
       this.emit('notification', { message: 'Failed to save settings', type: 'error' });

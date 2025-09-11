@@ -121,6 +121,11 @@ class SettingsManager {
         highContrast: false,
         reducedMotion: false,
       },
+      // Search related defaults
+      searchEngine: {
+        name: 'DuckDuckGo',
+        template: 'https://duckduckgo.com/?q={query}'
+      }
     };
   }
 
@@ -325,6 +330,9 @@ class SettingsManager {
       customTheme: (v) => typeof v === "boolean",
       "accessibility.highContrast": (v) => typeof v === "boolean",
       "accessibility.reducedMotion": (v) => typeof v === "boolean",
+      // Simple validation for search engine setting
+      searchEngine: (v) =>
+        v && typeof v === 'object' && typeof v.name === 'string' && typeof v.template === 'string' && v.template.includes('{query}')
     };
 
     const validator = validations[key];

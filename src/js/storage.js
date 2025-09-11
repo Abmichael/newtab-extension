@@ -25,6 +25,10 @@ class StorageManager {
           highContrast: false,
           reducedMotion: false,
         },
+        searchEngine: {
+          name: 'DuckDuckGo',
+          template: 'https://duckduckgo.com/?q={query}'
+        }
       },
       version: "1.0",
     };
@@ -174,6 +178,13 @@ class StorageManager {
           (settings.accessibility.reducedMotion !== undefined &&
             typeof settings.accessibility.reducedMotion !== "boolean")
         ) {
+          return false;
+        }
+      }
+
+      // Validate searchEngine if present
+      if (settings.searchEngine) {
+        if (typeof settings.searchEngine !== 'object' || typeof settings.searchEngine.name !== 'string' || typeof settings.searchEngine.template !== 'string' || !settings.searchEngine.template.includes('{query}')) {
           return false;
         }
       }
