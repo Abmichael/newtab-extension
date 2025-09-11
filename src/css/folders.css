@@ -9,47 +9,65 @@
   outline: none;
 }
 
-.folder-button {
+ .folder-button {
   width: var(--folder-size);
   height: var(--folder-size);
-  border-radius: 18px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  /* Softer shadow: lower offset, blur and opacity */
-  box-shadow: 0 4px 10px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.08);
-  padding: 10px;
+  border-radius: 22px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.06) inset;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  padding: 12px;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
   gap: 8px;
-  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.25s ease, border-color 0.25s ease;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   outline: none;
-}
+ }
 
-.folder-button:hover {
-  transform: translateY(-3px);
-  /* Softer hover shadow */
-  box-shadow: 0 6px 14px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.12);
-}
+ /* Light theme refinement: integrate with lighter surface without dull gray */
+ body.theme-light .folder-button {
+  background: rgba(255,255,255,0.82);
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 4px 18px rgba(0,0,0,0.10), 0 0 0 1px rgba(255,255,255,0.6) inset;
+ }
 
-.folder-button:active {
-  transform: translateY(0);
-}
+ .folder-button:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.35), 0 0 0 1px color-mix(in srgb, var(--primary-color) 40%, transparent) inset;
+  background: linear-gradient(145deg, color-mix(in srgb, var(--primary-color) 16%, transparent), rgba(255,255,255,0.04));
+ }
 
-.folder-preview-icon {
+ .folder-button:active {
+  transform: translateY(-1px);
+ }
+
+ .folder-preview-icon {
   width: 100%;
   height: 100%;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,255,255,0.18));
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  transition: background 0.18s ease, box-shadow 0.18s ease;
-}
+  position: relative;
+  transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+ }
+
+ body.theme-light .folder-preview-icon {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.65));
+ }
+
+ .folder-button:hover .folder-preview-icon {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 55%, transparent), 0 2px 6px rgba(0,0,0,0.25);
+  transform: translateY(-2px);
+ }
 
 .folder-preview-icon img {
   width: 22px;

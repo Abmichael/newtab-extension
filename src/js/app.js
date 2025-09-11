@@ -21,6 +21,11 @@ class NeoTabApp {
     // Initialize settings manager
     await this.settingsManager.init();
 
+    // Notify search component that settings are ready
+    if (window.__neotabSearchRefresh) {
+      window.__neotabSearchRefresh();
+    }
+
     this.updateClock();
     this.setupEventListeners();
 

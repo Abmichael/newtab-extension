@@ -18,6 +18,7 @@
 
   function buildForm(settings){
     const engine = settings.searchEngine || { name: 'DuckDuckGo', template: 'https://duckduckgo.com/?q={query}' };
+    console.log('Search: Building form with engine:', engine.name);
     const container = document.getElementById('search-bar-container');
     if(!container) return;
 
@@ -45,13 +46,17 @@
       }
     }
     form.innerHTML = `
-      <span class="engine-badge" title="Search engine">
-        <img src="${logoSrc}" alt="${engine.name} logo" style="width:18px;height:18px;object-fit:contain;border-radius:4px;" 
-             onerror="this.src='https://www.google.com/s2/favicons?domain=' + new URL('${engine.template.replace('{query}','test')}').hostname + '&sz=32';" />
-      </span>
+      <div class="search-leading">
+        <span class="engine-badge" title="Search engine">
+          <img src="${logoSrc}" alt="${engine.name} logo" 
+               onerror="this.src='https://www.google.com/s2/favicons?domain=' + new URL('${engine.template.replace('{query}','test')}').hostname + '&sz=32';" />
+        </span>
+      </div>
       <input type="text" id="neotab-search-input" placeholder="Search the web" aria-label="Search" />
-      <button class="nt-btn nt-btn-primary search-submit" type="submit" aria-label="Search submit">Search</button>
-    `;
+      <button class="nt-btn search-submit" type="submit" aria-label="Search submit">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <span>Search</span>
+      </button>`;
 
     form.addEventListener('submit', (e)=>{
       e.preventDefault();
@@ -77,6 +82,7 @@
     const container = document.getElementById('search-bar-container');
     if(!container) return;
 
+    // Initial build with current settings (may be defaults)
     const settings = getSettings();
     buildForm(settings);
 
@@ -88,8 +94,22 @@
 
     // Expose refresh method
     window.__neotabSearchRefresh = function(){
+      console.log('Search: Refreshing with current settings');
       buildForm(getSettings());
     };
+
+    // Wait for app initialization and refresh with actual settings
+    const checkAndRefresh = () => {
+      if(window.__neotabApp && window.__neotabApp.settingsManager && window.__neotabApp.settingsManager.settings) {
+        // App is fully initialized, refresh search bar with actual settings
+        console.log('Search: App initialized, refreshing with loaded settings');
+        window.__neotabSearchRefresh();
+      } else {
+        // App not ready yet, check again in a bit
+        setTimeout(checkAndRefresh, 50);
+      }
+    };
+    checkAndRefresh();
   }
 
   if(document.readyState === 'loading'){
