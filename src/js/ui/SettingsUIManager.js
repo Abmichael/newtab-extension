@@ -97,6 +97,16 @@ class SettingsUIManager extends ComponentManager {
                 </select>
               </div>
               <div class="setting-group">
+                <label class="setting-label">Clock Position</label>
+                <div class="setting-description">Choose where the floating clock widget appears</div>
+                <select class="setting-select" id="clock-position">
+                  <option value="top-left">Top Left</option>
+                  <option value="top-right">Top Right</option>
+                  <option value="bottom-left">Bottom Left</option>
+                  <option value="bottom-right">Bottom Right</option>
+                </select>
+              </div>
+              <div class="setting-group">
                 <label class="setting-checkbox">
                   <input type="checkbox" id="show-seconds">
                   <span>Show seconds</span>
@@ -259,34 +269,35 @@ class SettingsUIManager extends ComponentManager {
     if(themes[currentKey]) applyLive(themes[currentKey]);
 
     Object.entries(themes).forEach(([themeName, themeData]) => {
-      const themeOption = document.createElement("div");
-      themeOption.className = "theme-option";
+      const themeOption = document.createElement('button');
+      themeOption.type = 'button';
+      themeOption.className = 'theme-option';
       themeOption.dataset.theme = themeName;
+      themeOption.setAttribute('aria-label', `Activate ${themeName} theme`);
 
       if (settings.theme === themeName && !settings.customTheme) {
-        themeOption.classList.add("active");
+        themeOption.classList.add('active');
       }
 
+      // Use CSS classes that rely on body.theme-* tokens for styling; fallback preview chips inside
       themeOption.innerHTML = `
-        <div class="theme-preview-box" style="
-          background: ${themeData.backgroundGradient || themeData.backgroundColor};
-          color: ${themeData.textColor};
-          border-color: ${themeData.primaryColor};
-        ">
-          <div class="theme-preview-content" style="background: ${themeData.primaryColor}"></div>
+        <div class="theme-preview-box">
+          <div class="theme-preview-chip primary"></div>
+          <div class="theme-preview-chip surface"></div>
+          <div class="theme-preview-chip accent"></div>
         </div>
         <span class="theme-name">${themeName.charAt(0).toUpperCase() + themeName.slice(1)}</span>
       `;
 
-      themeOption.addEventListener("mouseenter", () => {
-        applyLive(themeData);
-      });
-
-      themeOption.addEventListener("click", () => {
-        modal.querySelectorAll(".theme-option").forEach(opt => opt.classList.remove("active"));
-        themeOption.classList.add("active");
-        modal.querySelector("#custom-theme").checked = false;
-        modal.querySelector("#custom-colors").style.display = "none";
+      themeOption.addEventListener('mouseenter', () => applyLive(themeData));
+      themeOption.addEventListener('focus', () => applyLive(themeData));
+      themeOption.addEventListener('click', () => {
+        modal.querySelectorAll('.theme-option').forEach(opt => opt.classList.remove('active'));
+        themeOption.classList.add('active');
+        const customToggle = modal.querySelector('#custom-theme');
+        if (customToggle) customToggle.checked = false;
+        const customSection = modal.querySelector('#custom-colors');
+        if (customSection) customSection.style.display = 'none';
         applyLive(themeData);
       });
 
@@ -312,16 +323,32 @@ class SettingsUIManager extends ComponentManager {
       modal.querySelector("#primary-color").value = settings.customColors.primaryColor || "#2563eb";
     }
 
+    // Bind live custom theme preview (no persistence until Save)
+    const customInputs = modal.querySelectorAll('#custom-colors input[type="color"]');
+    customInputs.forEach(input => {
+      input.addEventListener('input', () => {
+        if (!modal.querySelector('#custom-theme').checked) return;
+        const custom = {
+          backgroundColor: modal.querySelector('#background-color').value,
+          textColor: modal.querySelector('#text-color').value,
+          primaryColor: modal.querySelector('#primary-color').value
+        };
+        this.applyCustomThemePreview(custom);
+      });
+    });
+
     // Layout settings
-    modal.querySelector("#grid-columns").value = settings.gridColumns || 5;
-    modal.querySelector("#grid-columns-value").textContent = settings.gridColumns || 5;
+  modal.querySelector("#grid-columns").value = settings.gridSize || settings.gridColumns || 5;
+  modal.querySelector("#grid-columns-value").textContent = settings.gridSize || settings.gridColumns || 5;
     modal.querySelector("#tile-size").value = settings.tileSize || 120;
     modal.querySelector("#tile-size-value").textContent = `${settings.tileSize || 120}px`;
 
     // Clock settings
-    modal.querySelector("#show-clock").checked = settings.showClock !== false;
-    modal.querySelector("#time-format").value = settings.timeFormat || "12";
-    modal.querySelector("#show-seconds").checked = settings.showSeconds || false;
+  modal.querySelector("#show-clock").checked = settings.showClock !== false;
+  modal.querySelector("#time-format").value = (settings.clockFormat === '24h' ? '24' : '12');
+  modal.querySelector("#show-seconds").checked = settings.showSeconds || false;
+  const posSelect = modal.querySelector('#clock-position');
+  if (posSelect) posSelect.value = settings.clockPosition || 'bottom-right';
 
     // Accessibility settings
     modal.querySelector("#reduce-animations").checked = settings.reduceAnimations || false;
@@ -366,7 +393,78 @@ class SettingsUIManager extends ComponentManager {
     customThemeCheckbox.addEventListener("change", (e) => {
       customColorsGroup.style.display = e.target.checked ? "block" : "none";
       if (e.target.checked) {
+        // When switching to custom theme, seed the color pickers with the CURRENT effective theme
+        // rather than leaving previous / default values (which felt random to users).
         modal.querySelectorAll(".theme-option").forEach(opt => opt.classList.remove("active"));
+
+  const settings = this.settingsManager.getCurrentSettings();
+  // IMPORTANT: Theme classes (theme-light, theme-ocean, etc.) attach custom property overrides on <body>,
+  // so reading computed styles from document.documentElement returns ONLY base (dark) defaults.
+  // Use body computed styles to capture the active theme's resolved palette.
+  const styleTarget = document.body || document.documentElement;
+  const rootStyles = getComputedStyle(styleTarget);
+
+        // Helper: normalize rgb()/hex value to #RRGGBB for <input type="color">
+        const toHex = (val) => {
+          if (!val) return '#000000';
+            val = val.trim();
+            if (val.startsWith('#')) {
+              // Ensure 7-char form
+              if (val.length === 4) {
+                return '#' + [...val.slice(1)].map(c=>c+c).join('');
+              }
+              return val.slice(0,7);
+            }
+            const rgbMatch = val.match(/rgba?\(([^)]+)\)/);
+            if (rgbMatch) {
+              const parts = rgbMatch[1].split(',').map(p=>parseInt(p.trim(),10)).slice(0,3);
+              const hex = parts.map(n=> (isNaN(n)?0:n).toString(16).padStart(2,'0')).join('');
+              return '#' + hex;
+            }
+            // Fallback: if it's something like 'white'
+            const ctx = document.createElement('canvas').getContext('2d');
+            try {
+              ctx.fillStyle = val; // browser will parse or throw
+              const computed = ctx.fillStyle; // may end up rgb(...)
+              if (computed.startsWith('#')) return computed;
+              const m2 = computed.match(/rgba?\(([^)]+)\)/);
+              if (m2) {
+                const parts = m2[1].split(',').map(p=>parseInt(p.trim(),10)).slice(0,3);
+                return '#' + parts.map(n=> (isNaN(n)?0:n).toString(16).padStart(2,'0')).join('');
+              }
+            } catch(_) { /* ignore */ }
+            return '#000000';
+        };
+
+        // Prefer live CSS variables so 'auto' / dynamic themes reflect real palette.
+  let bg = rootStyles.getPropertyValue('--bg-color') || settings.backgroundColor;
+  let text = rootStyles.getPropertyValue('--color-text-primary') || settings.textColor;
+  let primary = rootStyles.getPropertyValue('--primary-color') || settings.primaryColor;
+
+  // Trim to avoid leading whitespace from getPropertyValue
+  bg = bg && bg.trim();
+  text = text && text.trim();
+  primary = primary && primary.trim();
+
+        bg = toHex(bg);
+        text = toHex(text);
+        primary = toHex(primary);
+
+        // Populate inputs so user sees their current palette as starting point.
+        const bgInput = modal.querySelector('#background-color');
+        const textInput = modal.querySelector('#text-color');
+        const primaryInput = modal.querySelector('#primary-color');
+        if (bgInput) bgInput.value = bg;
+        if (textInput) textInput.value = text;
+        if (primaryInput) primaryInput.value = primary;
+
+        this.applyCustomThemePreview({
+          backgroundColor: bg,
+          textColor: text,
+          primaryColor: primary
+        });
+      } else {
+        this.removeCustomThemePreview();
       }
     });
 
@@ -456,21 +554,32 @@ class SettingsUIManager extends ComponentManager {
         newSettings.customTheme = false;
       } else if (modal.querySelector("#custom-theme").checked) {
         newSettings.customTheme = true;
+        const bg = modal.querySelector("#background-color").value;
+        const text = modal.querySelector("#text-color").value;
+        const primary = modal.querySelector("#primary-color").value;
         newSettings.customColors = {
-          backgroundColor: modal.querySelector("#background-color").value,
-          textColor: modal.querySelector("#text-color").value,
-          primaryColor: modal.querySelector("#primary-color").value
+          backgroundColor: bg,
+          textColor: text,
+          primaryColor: primary
         };
+        // Also persist legacy individual keys so existing code paths (and older exports) remain compatible.
+        newSettings.backgroundColor = bg;
+        newSettings.textColor = text;
+        newSettings.primaryColor = primary;
+        newSettings.backgroundGradient = bg; // simple fallback; user could customize later if UI adds gradient control
       }
 
       // Layout settings
-      newSettings.gridColumns = parseInt(modal.querySelector("#grid-columns").value);
+  newSettings.gridSize = parseInt(modal.querySelector("#grid-columns").value);
       newSettings.tileSize = parseInt(modal.querySelector("#tile-size").value);
 
       // Clock settings
       newSettings.showClock = modal.querySelector("#show-clock").checked;
-      newSettings.timeFormat = modal.querySelector("#time-format").value;
-      newSettings.showSeconds = modal.querySelector("#show-seconds").checked;
+  const tf = modal.querySelector("#time-format").value;
+  newSettings.clockFormat = tf === '24' ? '24h' : '12h';
+  newSettings.showSeconds = modal.querySelector("#show-seconds").checked;
+  const clockPosEl = modal.querySelector('#clock-position');
+  if (clockPosEl) newSettings.clockPosition = clockPosEl.value;
 
       // Accessibility settings
       newSettings.reduceAnimations = modal.querySelector("#reduce-animations").checked;
@@ -556,10 +665,11 @@ class SettingsUIManager extends ComponentManager {
         const defaultSettings = {
           theme: "auto",
           customTheme: false,
-          gridColumns: 5,
+          gridSize: 5,
           tileSize: 120,
           showClock: true,
-          timeFormat: "12",
+          clockFormat: "12h",
+            clockPosition: 'bottom-right',
           showSeconds: false,
           reduceAnimations: false,
           highContrast: false,
@@ -610,6 +720,28 @@ class SettingsUIManager extends ComponentManager {
   cleanup() {
     this.closeSettingsModal();
     super.cleanup();
+  }
+
+  /**
+   * Inject or update an ephemeral <style> block for live custom theme preview only.
+   */
+  applyCustomThemePreview(custom) {
+    const id = 'neotab-custom-theme-preview';
+    let styleEl = document.getElementById(id);
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = id;
+      document.head.appendChild(styleEl);
+    }
+    // Map chosen colors onto core tokens; allow gradient fallback to flat color
+    styleEl.textContent = `body.theme-custom { --primary-color: ${custom.primaryColor}; --bg-color: ${custom.backgroundColor}; --background-gradient: ${custom.backgroundColor}; --color-text-primary: ${custom.textColor}; --color-text-secondary: ${custom.textColor}; --surface-panel-bg: ${custom.backgroundColor}; --surface-panel-border: color-mix(in srgb, ${custom.textColor} 15%, ${custom.backgroundColor}); --surface-popover-bg: color-mix(in srgb, ${custom.backgroundColor} 94%, #ffffff); }`;
+    document.body.classList.add('theme-custom');
+  }
+
+  removeCustomThemePreview() {
+    const styleEl = document.getElementById('neotab-custom-theme-preview');
+    if (styleEl) styleEl.remove();
+    document.body.classList.remove('theme-custom');
   }
 }
 

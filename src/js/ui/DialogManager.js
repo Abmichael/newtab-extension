@@ -252,6 +252,85 @@ class DialogManager extends ComponentManager {
     });
   }
 
+  showDeleteLinkDialog(linkId) {
+    // Find link by ID among root links
+    const link = this.folderSystem.getAllLinks?.().find(l => l.id === linkId);
+    if (!link) return;
+
+    const dialog = this.createDialog(
+      "Delete Link",
+      `
+      <p>Delete the link "${link.name || link.url}"?</p>
+      <p class="warning">This action cannot be undone.</p>
+    `,
+      [
+        { text: "Cancel", action: "cancel" },
+        { text: "Delete", action: "delete", primary: true, destructive: true },
+      ]
+    );
+
+    dialog.addEventListener("action", async (e) => {
+      if (e.detail.action === "delete") {
+        try {
+          await this.folderSystem.deleteRootLink(linkId);
+          this.emit('foldersChanged');
+        } catch (err) {
+          console.error('Failed to delete link:', err);
+          alert('Failed to delete link.');
+        }
+      }
+      this.closeDialog();
+    });
+  }
+
+  showDeleteSiteDialog(folderId, siteId) {
+    try {
+      const { folder, site } = this.folderSystem.getSiteById(folderId, siteId);
+      if (!folder || !site) return;
+      const dialog = this.createDialog(
+        "Delete Site",
+        `
+        <p>Delete the site "${site.name || site.url}" from folder "${folder.name}"?</p>
+        <p class="warning">This action cannot be undone.</p>
+      `,
+        [
+          { text: "Cancel", action: "cancel" },
+          { text: "Delete", action: "delete", primary: true, destructive: true },
+        ]
+      );
+
+      dialog.addEventListener("action", async (e) => {
+        if (e.detail.action === "delete") {
+          try {
+            await this.folderSystem.deleteSite(folderId, siteId);
+            // Optimistically remove the site tile from any open popover without closing it
+            try {
+              const selector = `.folder-popover .site-grid .popover-site[data-site-id="${siteId}"][data-folder-id="${folderId}"]`;
+              const tile = document.querySelector(selector);
+              if (tile) tile.remove();
+              // If grid becomes empty, we could optionally close the popover or show empty state
+              const grid = document.querySelector('.folder-popover .site-grid');
+              if (grid && grid.children.length === 0) {
+                // Add a lightweight empty indicator (non-intrusive)
+                const empty = document.createElement('div');
+                empty.className = 'popover-empty';
+                empty.textContent = 'No sites';
+                grid.appendChild(empty);
+              }
+            } catch (_) { /* ignore DOM issues */ }
+            this.emit('foldersChanged');
+          } catch (err) {
+            console.error('Failed to delete site:', err);
+            alert('Failed to delete site.');
+          }
+        }
+        this.closeDialog();
+      });
+    } catch (err) {
+      console.error('Error preparing delete site dialog:', err);
+    }
+  }
+
   // ============ Dialog Infrastructure ============
 
   createDialog(title, content, buttons) {

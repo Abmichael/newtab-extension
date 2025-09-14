@@ -1,0 +1,229 @@
+/* NeoTab Theme Tokens
+   Centralized semantic CSS custom properties.
+   Only variables here; component CSS consumes tokens.
+*/
+
+/* Base (dark) theme tokens */
+:root {
+  /* Core brand */
+  --primary-color: #4285f4;
+  --primary-color-rgb: 66 133 244;
+
+  /* Text */
+  --color-text-primary: #ffffff;
+  --color-text-secondary: rgba(255,255,255,0.75);
+  --color-text-inverse: #1f2937;
+
+  /* Background + surfaces */
+  --bg-color: #111111;
+  --background-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --surface-base: rgba(15,15,20,0.55);
+  --surface-alt: rgba(255,255,255,0.1);
+  --surface-glass-border: rgba(255,255,255,0.18);
+  --surface-glass-shadow: 0 8px 28px -8px rgba(0,0,0,0.55), 0 2px 0 0 rgba(255,255,255,0.04) inset;
+  --surface-elevated-bg: rgba(255,255,255,0.1);
+  --surface-elevated-border: rgba(255,255,255,0.2);
+
+  /* Buttons */
+  --btn-bg: rgba(255,255,255,0.12);
+  --btn-border: rgba(255,255,255,0.2);
+  --btn-color: var(--color-text-primary);
+  --btn-hover-bg: rgba(255,255,255,0.2);
+
+  /* Search */
+  --search-form-bg: var(--surface-base);
+  --search-form-border: var(--surface-glass-border);
+  --search-form-shadow: var(--surface-glass-shadow);
+  --search-button-separator: rgba(255,255,255,0.15);
+
+  /* Tiles */
+  --tile-border: rgba(255,255,255,0.18);
+  --tile-bg: rgba(255,255,255,0.08);
+  --tile-hover-outline: color-mix(in srgb, var(--primary-color) 40%, transparent);
+  --tile-preview-bg: linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,255,255,0.18));
+
+  /* Headers / chrome */
+  --header-bg: rgba(0,0,0,0.35);
+  --header-border: transparent;
+
+  /* Clock widget */
+  --clock-bg: rgba(0,0,0,0.4);
+  --clock-border: rgba(255,255,255,0.1);
+
+  /* Overlay backgrounds */
+  --overlay-backdrop-dark: rgba(0,0,0,0.8);
+  --overlay-backdrop-light: rgba(0,0,0,0.35);
+
+  /* Panels / elevated surfaces */
+  --surface-panel-bg: rgba(28,30,40,0.92);
+  --surface-panel-border: rgba(255,255,255,0.08);
+  --surface-popover-bg: rgba(34,37,48,0.95);
+  --surface-subtle-bg: rgba(255,255,255,0.05);
+
+  /* Status colors */
+  --color-danger: #d93025;
+  --color-danger-hover: #b52d20;
+  --color-warning: #ffa726;
+  --color-info: #2563eb;
+
+  /* Add tile */
+  --add-tile-border: rgba(255,255,255,0.25);
+  --add-tile-color: var(--color-text-primary);
+  --add-tile-hover-bg: color-mix(in srgb, var(--primary-color) 14%, transparent);
+
+  /* Focus */
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary-color) 55%, transparent);
+
+  /* Shadows */
+  --shadow-sm: 0 2px 4px -1px rgba(0,0,0,0.4);
+  --shadow-md: 0 6px 18px -6px rgba(0,0,0,0.55);
+  --shadow-lg: 0 12px 32px -10px rgba(0,0,0,0.65);
+
+  /* Layout / sizing */
+  --grid-size: 4;
+  --folder-size: 120px;
+  --gap-size: 24px;
+}
+
+/* Light theme overrides */
+body.theme-light {
+  --color-text-primary: #1f2937;
+  --color-text-secondary: #4b5563;
+  --color-text-inverse: #ffffff;
+  --bg-color: #f4f7fb;
+  --background-gradient: linear-gradient(135deg, #f4f7fb 0%, #dfe7f3 100%);
+  --surface-base: rgba(255,255,255,0.85);
+  --surface-alt: rgba(0,0,0,0.06);
+  --surface-glass-border: rgba(0,0,0,0.08);
+  --surface-glass-shadow: 0 6px 28px -10px rgba(0,0,0,0.18), 0 1px 0 0 rgba(255,255,255,0.9) inset;
+  --surface-elevated-bg: rgba(0,0,0,0.06);
+  --surface-elevated-border: rgba(0,0,0,0.12);
+  --btn-bg: rgba(0,0,0,0.05);
+  --btn-border: rgba(0,0,0,0.15);
+  --btn-color: #1f2937;
+  --btn-hover-bg: rgba(0,0,0,0.08);
+  --search-form-bg: var(--surface-base);
+  --search-form-border: var(--surface-glass-border);
+  --search-form-shadow: var(--surface-glass-shadow);
+  --search-button-separator: rgba(0,0,0,0.1);
+  --tile-border: rgba(0,0,0,0.08);
+  --tile-bg: rgba(255,255,255,0.82);
+  --tile-preview-bg: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.65));
+  --add-tile-border: rgba(0,0,0,0.30);
+  --add-tile-color: #666666;
+  --add-tile-hover-bg: color-mix(in srgb, var(--primary-color) 18%, white 82%);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary-color) 50%, transparent);
+  --header-bg: rgba(255,255,255,0.6);
+  --header-border: rgba(0,0,0,0.06);
+  --clock-bg: rgba(0,0,0,0.04);
+  --clock-border: rgba(0,0,0,0.1);
+  --surface-panel-bg: #ffffff;
+  --surface-panel-border: rgba(0,0,0,0.12);
+  --surface-popover-bg: rgba(255,255,255,0.96);
+}
+
+/* Ocean Theme */
+body.theme-ocean {
+  --primary-color: #38bdf8;
+  --bg-color: #0d6d85;
+  --background-gradient: linear-gradient(135deg, #0b7898 0%, #045073 100%);
+  --color-text-primary: #f0f9ff;
+  --color-text-secondary: rgba(240,249,255,0.72);
+  --tile-bg: rgba(255,255,255,0.10);
+  --tile-border: rgba(255,255,255,0.18);
+  --header-bg: rgba(4,22,34,0.55);
+  --add-tile-border: rgba(255,255,255,0.26);
+  --surface-panel-bg: rgba(10,39,54,0.85);
+  --surface-panel-border: rgba(255,255,255,0.10);
+  --surface-popover-bg: rgba(14,52,70,0.90);
+  --surface-subtle-bg: rgba(255,255,255,0.05);
+}
+
+/* Sunset Theme */
+body.theme-sunset {
+  --primary-color: #ff6b6b;
+  --bg-color: #612525;
+  --background-gradient: linear-gradient(135deg, #7a2e2e 0%, #3d1a1a 100%);
+  --color-text-primary: #ffecec;
+  --color-text-secondary: rgba(255,236,236,0.70);
+  --tile-bg: rgba(255,255,255,0.12);
+  --tile-border: rgba(255,255,255,0.22);
+  --header-bg: rgba(40,10,10,0.55);
+  --add-tile-border: rgba(255,255,255,0.32);
+  --surface-panel-bg: rgba(52,20,20,0.88);
+  --surface-panel-border: rgba(255,255,255,0.10);
+  --surface-popover-bg: rgba(60,24,24,0.92);
+  --surface-subtle-bg: rgba(255,255,255,0.06);
+}
+
+/* Forest Theme */
+body.theme-forest {
+  --primary-color: #68d391;
+  --bg-color: #1f4f3a;
+  --background-gradient: linear-gradient(135deg, #235b42 0%, #133424 100%);
+  --color-text-primary: #e3fced;
+  --color-text-secondary: rgba(227,252,237,0.70);
+  --tile-bg: rgba(255,255,255,0.10);
+  --tile-border: rgba(255,255,255,0.20);
+  --header-bg: rgba(10,30,22,0.55);
+  --add-tile-border: rgba(255,255,255,0.28);
+  --surface-panel-bg: rgba(18,42,31,0.86);
+  --surface-panel-border: rgba(255,255,255,0.10);
+  --surface-popover-bg: rgba(24,54,40,0.92);
+  --surface-subtle-bg: rgba(255,255,255,0.06);
+}
+
+/* High contrast mode adjustments (toggle via body.high-contrast) */
+body.high-contrast {
+  --btn-hover-bg: color-mix(in srgb, var(--primary-color) 25%, black);
+  --tile-hover-outline: var(--primary-color);
+  --add-tile-hover-bg: color-mix(in srgb, var(--primary-color) 28%, black 15%);
+  --focus-ring: 0 0 0 3px var(--primary-color);
+}
+
+/* Reduced motion (body.reduced-motion) */
+body.reduced-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Backward compatibility mapping: keep legacy var names if referenced */
+:root, body.theme-light {
+  --text-color: var(--color-text-primary);
+  --text-color-muted: var(--color-text-secondary);
+}
+
+/* Theme preview option components */
+.theme-option { border:1px solid var(--surface-panel-border); background: color-mix(in srgb, var(--surface-panel-bg) 88%, transparent); padding:10px 12px; border-radius:16px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; position:relative; transition:border-color .18s ease, box-shadow .18s ease, background .25s ease, transform .25s ease; min-width:118px; }
+.theme-option:hover { background: color-mix(in srgb, var(--primary-color) 12%, var(--surface-panel-bg)); }
+.theme-option.active { border-color: var(--primary-color); box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 55%, transparent); }
+.theme-option:focus-visible { outline:none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 60%, transparent); }
+.theme-preview-box { display:flex; gap:10px; background: linear-gradient(120deg, var(--background-gradient)); padding:12px 16px; border-radius:12px; box-shadow:0 3px 10px -4px rgba(0,0,0,0.45), 0 0 0 1px rgba(255,255,255,0.15) inset; width:100%; justify-content:center; }
+.theme-preview-chip { width:18px; height:18px; border-radius:6px; box-shadow: 0 0 0 1px rgba(0,0,0,0.35), 0 2px 5px -1px rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.18); }
+.theme-name { font-size:11px; font-weight:600; letter-spacing:.5px; text-transform:uppercase; color: var(--color-text-secondary); }
+
+/* Static per-theme palette previews */
+.theme-option[data-theme="light"] .theme-preview-box { background: linear-gradient(135deg, #f9fafb, #edf1f5); }
+.theme-option[data-theme="light"] .theme-preview-chip:nth-child(1) { background:#2563eb; }
+.theme-option[data-theme="light"] .theme-preview-chip:nth-child(2) { background:#ffffff; }
+.theme-option[data-theme="light"] .theme-preview-chip:nth-child(3) { background:#dbeafe; }
+
+.theme-option[data-theme="dark"] .theme-preview-box { background: linear-gradient(135deg, #0d1117, #1c232d); }
+.theme-option[data-theme="dark"] .theme-preview-chip:nth-child(1) { background:#3b82f6; }
+.theme-option[data-theme="dark"] .theme-preview-chip:nth-child(2) { background:#1e2935; }
+.theme-option[data-theme="dark"] .theme-preview-chip:nth-child(3) { background:#243140; }
+
+.theme-option[data-theme="ocean"] .theme-preview-box { background: linear-gradient(135deg, #0e7490, #036082); }
+.theme-option[data-theme="ocean"] .theme-preview-chip:nth-child(1) { background:#38bdf8; }
+.theme-option[data-theme="ocean"] .theme-preview-chip:nth-child(2) { background:#133545; }
+.theme-option[data-theme="ocean"] .theme-preview-chip:nth-child(3) { background:#1d475a; }
+
+.theme-option[data-theme="sunset"] .theme-preview-box { background: linear-gradient(135deg, #b53737, #5a1c1c); }
+.theme-option[data-theme="sunset"] .theme-preview-chip:nth-child(1) { background:#ff6b6b; }
+.theme-option[data-theme="sunset"] .theme-preview-chip:nth-child(2) { background:#4a1d1d; }
+.theme-option[data-theme="sunset"] .theme-preview-chip:nth-child(3) { background:#5b2424; }
+
+.theme-option[data-theme="forest"] .theme-preview-box { background: linear-gradient(135deg, #276749, #153a29); }
+.theme-option[data-theme="forest"] .theme-preview-chip:nth-child(1) { background:#68d391; }
+.theme-option[data-theme="forest"] .theme-preview-chip:nth-child(2) { background:#1d3b2c; }
+.theme-option[data-theme="forest"] .theme-preview-chip:nth-child(3) { background:#244835; }

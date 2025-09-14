@@ -116,7 +116,13 @@ class SettingsManager {
       showClock: false, // Disable by default to avoid conflicts
       clockFormat: "12h",
       clockPosition: "bottom-right", // Default to bottom-right to avoid header overlap
+  showSeconds: false,
+  clockFreePosition: null, // { xPercent, yPercent } when user freely positions clock
       customTheme: false,
+      // Persisted custom color palette (if user enables custom theme). When customTheme is true
+      // these values will be copied into backgroundColor/textColor/primaryColor/backgroundGradient
+      // on load to keep compatibility with existing code paths.
+      customColors: null,
       accessibility: {
         highContrast: false,
         reducedMotion: false,
@@ -186,6 +192,9 @@ class SettingsManager {
       // Update settings
       Object.assign(this.settings, newSettings);
 
+      // If a custom theme is being saved ensure root color keys reflect customColors
+      this.syncCustomColors();
+
       // Save to storage
       const data = await this.storage.loadData();
       data.settings = this.settings;
@@ -214,6 +223,9 @@ class SettingsManager {
     try {
       const root = document.documentElement;
       const body = document.body;
+
+      // Ensure any stored customColors are reflected in root color keys before applying
+      this.syncCustomColors();
 
       // Apply theme
       if (this.settings.theme && !this.settings.customTheme) {
@@ -246,31 +258,37 @@ class SettingsManager {
         }
 
         const themeData = this.themes[effectiveThemeKey] || this.themes.dark;
-        root.style.setProperty("--bg-color", themeData.backgroundColor);
-        root.style.setProperty("--text-color", themeData.textColor);
+        // Base token assignments (retain for dynamic custom theme previews)
+        root.style.setProperty("--background-gradient", themeData.backgroundGradient);
         root.style.setProperty("--primary-color", themeData.primaryColor);
-        root.style.setProperty(
-          "--background-gradient",
-          themeData.backgroundGradient
-        );
+        // Remove legacy direct text/bg assignment; tokens remapped via themes.css
 
-        // Apply body theme class for CSS overrides
+  // Clean existing theme classes. Each named theme corresponds to a CSS block in themes.css:
+  //  - theme-light / theme-dark remap core tokens
+  //  - theme-ocean / theme-sunset / theme-forest provide alternative palettes
+  //  - 'auto' adds both theme-auto and the resolved theme-light/theme-dark for variable remap
         const themeKeys = Object.keys(this.themes);
         themeKeys.forEach((t) => body.classList.remove(`theme-${t}`));
         body.classList.remove("theme-custom");
+        // Add canonical class for chosen theme (e.g., theme-light, theme-dark, theme-auto)
         body.classList.add(`theme-${this.settings.theme}`);
         if (this.settings.theme === "auto") {
-          body.classList.add(`theme-${effectiveThemeKey}`);
+          // Add effective runtime theme for variable remap (theme-light or theme-dark)
+            body.classList.add(`theme-${effectiveThemeKey}`);
         }
       } else {
         // Apply custom theme
+        root.style.setProperty("--background-gradient", this.settings.backgroundGradient);
+        root.style.setProperty("--primary-color", this.settings.primaryColor);
+        // Custom colors (background/text) rely on legacy mappings; still set for components reading old vars.
         root.style.setProperty("--bg-color", this.settings.backgroundColor);
         root.style.setProperty("--text-color", this.settings.textColor);
-        root.style.setProperty("--primary-color", this.settings.primaryColor);
-        root.style.setProperty(
-          "--background-gradient",
-          this.settings.backgroundGradient
-        );
+        // Mirror to new semantic tokens (fallback if theme-custom lacks CSS block)
+        root.style.setProperty("--color-text-primary", this.settings.textColor);
+        root.style.setProperty("--color-text-secondary", this.settings.textColor);
+        root.style.setProperty("--surface-panel-bg", this.settings.backgroundColor);
+        root.style.setProperty("--surface-panel-border", "color-mix(in srgb, " + this.settings.textColor + " 15%, " + this.settings.backgroundColor + ")");
+        root.style.setProperty("--surface-popover-bg", this.settings.backgroundColor);
 
         // Mark as custom
         const themeKeys = Object.keys(this.themes);
@@ -300,7 +318,8 @@ class SettingsManager {
       // Update clock
       this.updateClock();
 
-      console.log("Settings applied successfully");
+  // Debug: remove or downgrade before production
+  console.debug("Settings applied successfully (theme)", this.settings.theme);
       return true;
     } catch (error) {
       console.error("Error applying settings:", error);
@@ -318,6 +337,7 @@ class SettingsManager {
       theme: (v) =>
         typeof v === "string" &&
         (v === "auto" || this.themes[v] || v === "custom"),
+      customColors: (v) => v === null || (typeof v === 'object' && /^#[0-9A-Fa-f]{6}$/.test(v.backgroundColor || '') && /^#[0-9A-Fa-f]{6}$/.test(v.textColor || '') && /^#[0-9A-Fa-f]{6}$/.test(v.primaryColor || '')),
       backgroundColor: (v) =>
         typeof v === "string" && /^#[0-9A-Fa-f]{6}$/.test(v),
       textColor: (v) => typeof v === "string" && /^#[0-9A-Fa-f]{6}$/.test(v),
@@ -327,6 +347,8 @@ class SettingsManager {
       clockFormat: (v) => v === "12h" || v === "24h",
       clockPosition: (v) =>
         ["top-left", "top-right", "bottom-left", "bottom-right"].includes(v),
+      showSeconds: (v) => typeof v === 'boolean',
+      clockFreePosition: (v) => v === null || (typeof v === 'object' && typeof v.xPercent === 'number' && typeof v.yPercent === 'number' && v.xPercent >=0 && v.xPercent <=100 && v.yPercent >=0 && v.yPercent <=100),
       customTheme: (v) => typeof v === "boolean",
       "accessibility.highContrast": (v) => typeof v === "boolean",
       "accessibility.reducedMotion": (v) => typeof v === "boolean",
@@ -492,9 +514,84 @@ class SettingsManager {
 
     // Create clock element
     this.clockWidget = document.createElement("div");
-    this.clockWidget.className = `clock-widget clock-${this.settings.clockPosition}`;
-    this.clockWidget.innerHTML =
-      '<div class="clock-time"></div><div class="clock-date"></div>';
+    const usingFree = !!this.settings.clockFreePosition;
+    this.clockWidget.className = `clock-widget ${usingFree ? 'clock-free' : 'clock-' + this.settings.clockPosition}`;
+    this.clockWidget.innerHTML = '<div class="clock-time"></div><div class="clock-date"></div>';
+
+    // Apply free position if available
+    if (usingFree) {
+      const { xPercent, yPercent } = this.settings.clockFreePosition;
+      Object.assign(this.clockWidget.style, {
+        top: `calc(${yPercent}% - 0px)`,
+        left: `calc(${xPercent}% - 0px)`,
+        right: 'auto',
+        bottom: 'auto',
+        transform: 'translate(-50%, -50%)'
+      });
+    }
+
+    // Enable drag-to-place: user drags clock, we snap to nearest corner and persist clockPosition
+  let dragState = null;
+  let dragSaveInFlight = false;
+    const onPointerDown = (e) => {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      // Determine initial offset (use current rect center)
+      const rect = this.clockWidget.getBoundingClientRect();
+      dragState = {
+        pointerId: e.pointerId,
+        offsetX: e.clientX - rect.left,
+        offsetY: e.clientY - rect.top
+      };
+      this.clockWidget.setPointerCapture(e.pointerId);
+      this.clockWidget.style.transition = 'none';
+      document.body.style.userSelect = 'none';
+      this.clockWidget.style.cursor = 'grabbing';
+    };
+    const onPointerMove = (e) => {
+      if (!dragState) return;
+      // Convert to percent of viewport for persistence
+      const x = e.clientX - dragState.offsetX + this.clockWidget.offsetWidth / 2;
+      const y = e.clientY - dragState.offsetY + this.clockWidget.offsetHeight / 2;
+      const xPercent = (x / window.innerWidth) * 100;
+      const yPercent = (y / window.innerHeight) * 100;
+      // Apply immediate positioning in free mode
+      Object.assign(this.clockWidget.style, {
+        top: `${yPercent}%`,
+        left: `${xPercent}%`,
+        right: 'auto',
+        bottom: 'auto',
+        transform: 'translate(-50%, -50%)'
+      });
+      this.clockWidget.classList.add('clock-free');
+      ['clock-top-left','clock-top-right','clock-bottom-left','clock-bottom-right'].forEach(c=>this.clockWidget.classList.remove(c));
+    };
+    const onPointerUp = async (e) => {
+      if (!dragState) return;
+      this.clockWidget.releasePointerCapture(e.pointerId);
+      document.body.style.userSelect = '';
+      this.clockWidget.style.cursor = '';
+      dragState = null;
+      // Extract final percent position
+      const rect = this.clockWidget.getBoundingClientRect();
+      const centerX = rect.left + rect.width/2;
+      const centerY = rect.top + rect.height/2;
+      const xPercent = (centerX / window.innerWidth) * 100;
+      const yPercent = (centerY / window.innerHeight) * 100;
+      if (!dragSaveInFlight) {
+        dragSaveInFlight = true;
+        this.settings.clockFreePosition = { xPercent, yPercent };
+        // Do NOT mutate clockPosition to unsupported value; retain last corner for fallback.
+        const data = await this.storage.loadData();
+        data.settings = { ...data.settings, clockFreePosition: this.settings.clockFreePosition };
+        await this.storage.saveData(data);
+        dragSaveInFlight = false;
+      }
+    };
+    this.clockWidget.addEventListener('pointerdown', onPointerDown);
+    this.clockWidget.addEventListener('pointermove', onPointerMove);
+    this.clockWidget.addEventListener('pointerup', onPointerUp);
+  this.clockWidget.addEventListener('pointercancel', () => { dragState = null; document.body.style.userSelect=''; });
 
     // Add to body
     document.body.appendChild(this.clockWidget);
@@ -522,6 +619,7 @@ class SettingsManager {
         hour12: this.settings.clockFormat === "12h",
         hour: "2-digit",
         minute: "2-digit",
+        second: this.settings.showSeconds ? "2-digit" : undefined,
       };
 
       const timeString = now.toLocaleTimeString([], timeOptions);
@@ -565,6 +663,23 @@ class SettingsManager {
     if (this.clockWidget) {
       this.clockWidget.remove();
       this.clockWidget = null;
+    }
+  }
+
+  /**
+   * Sync customColors palette (if present & customTheme true) into legacy root color fields.
+   * This keeps backward compatibility with existing applySettings logic and ensures persistence.
+   */
+  syncCustomColors() {
+    if (this.settings.customTheme && this.settings.customColors) {
+      const { backgroundColor, textColor, primaryColor } = this.settings.customColors;
+      if (backgroundColor) this.settings.backgroundColor = backgroundColor;
+      if (textColor) this.settings.textColor = textColor;
+      if (primaryColor) this.settings.primaryColor = primaryColor;
+      // Derive a simple flat gradient based on backgroundColor if original gradient not set by user
+      if (!this.settings.backgroundGradient || /2d3748/.test(this.settings.backgroundGradient)) {
+        this.settings.backgroundGradient = backgroundColor;
+      }
     }
   }
 }

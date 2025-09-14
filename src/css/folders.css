@@ -13,8 +13,8 @@
   width: var(--folder-size);
   height: var(--folder-size);
   border-radius: 22px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18);
+  background: var(--tile-bg);
+  border: 1px solid var(--tile-border);
   box-shadow: 0 4px 14px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.06) inset;
   backdrop-filter: blur(10px) saturate(140%);
   -webkit-backdrop-filter: blur(10px) saturate(140%);
@@ -30,12 +30,7 @@
   outline: none;
  }
 
- /* Light theme refinement: integrate with lighter surface without dull gray */
- body.theme-light .folder-button {
-  background: rgba(255,255,255,0.82);
-  border: 1px solid rgba(0,0,0,0.08);
-  box-shadow: 0 4px 18px rgba(0,0,0,0.10), 0 0 0 1px rgba(255,255,255,0.6) inset;
- }
+ /* Light theme variant handled via tokens */
 
  .folder-button:hover {
   transform: translateY(-4px);
@@ -60,9 +55,7 @@
   transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
  }
 
- body.theme-light .folder-preview-icon {
-  background: linear-gradient(135deg, rgba(255,255,255,0.9), rgba(255,255,255,0.65));
- }
+ body.theme-light .folder-preview-icon { background: var(--tile-preview-bg); }
 
  .folder-button:hover .folder-preview-icon {
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 55%, transparent), 0 2px 6px rgba(0,0,0,0.25);
@@ -91,10 +84,7 @@
 /* Deprecated: .site-tile is no longer used; kept for compatibility */
 .site-tile { display: none; }
 
-body.theme-light .folder-title {
-  color: #1f2937;
-  text-shadow: none;
-}
+body.theme-light .folder-title { color: var(--color-text-primary); text-shadow:none; }
 
 /* DnD hover states for merging operations */
 .folder-item.dnd-over-folder .folder-button {
@@ -122,7 +112,7 @@ body.theme-light .folder-title {
 .folder-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-backdrop-dark);
   display: none; /* toggled by JS */
   align-items: center;
   justify-content: center;
@@ -131,9 +121,7 @@ body.theme-light .folder-title {
   transition: opacity 0.2s ease;
 }
 
-body.theme-light .folder-overlay {
-  background: rgba(0, 0, 0, 0.35);
-}
+body.theme-light .folder-overlay { background: var(--overlay-backdrop-light); }
 
 .folder-overlay.open {
   display: flex;
@@ -159,12 +147,10 @@ body.theme-light .folder-overlay {
   z-index: 3000;
   width: 420px;
   height: 420px;
-  background: rgba(255, 255, 255, 0.92);
-  --text-color: #2b2b2b;
-  color: var(--text-color);
-  border: 1px solid rgba(0,0,0,0.12);
+  background: var(--surface-popover-bg);
+  color: var(--color-text-primary);
+  border: 1px solid var(--surface-panel-border);
   border-radius: 12px;
-  /* Softer elevated surface shadow */
   box-shadow: 0 10px 24px rgba(0,0,0,0.12);
   backdrop-filter: blur(6px);
   transform-origin: center center;
@@ -190,6 +176,17 @@ body.theme-light .folder-overlay {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(var(--folder-size), 1fr));
   gap: 12px;
+}
+
+.folder-popover .site-grid .popover-empty {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  opacity: 0.6;
+  user-select: none;
+  padding: 8px 0;
 }
 
 .folder-popover .popover-title {
@@ -238,14 +235,10 @@ body.theme-light .folder-overlay {
 .folder-modal {
   width: min(90vw, 900px);
   max-height: 80vh;
-  /* Light theme surface */
-  background: #ffffff;
-  /* locally override text color for light surface */
-  --text-color: #2b2b2b;
-  color: var(--text-color);
-  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: var(--surface-panel-bg);
+  color: var(--color-text-primary);
+  border: 1px solid var(--surface-panel-border);
   border-radius: 16px;
-  /* Softer modal shadow */
   box-shadow: 0 12px 30px rgba(0,0,0,0.12);
   backdrop-filter: blur(6px);
   padding: 20px;
@@ -287,15 +280,13 @@ body.theme-light .folder-overlay {
 .context-menu {
   position: fixed;
   background: #ffffff;
-  /* locally override text color for light surface */
   --text-color: #2b2b2b;
   color: var(--text-color);
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 8px;
-  /* less heavy context menu shadow */
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(6px);
-  z-index: 2000;
+  z-index: 3500; /* above popover (3000) */
   min-width: 160px;
   overflow: hidden;
 }
@@ -460,60 +451,43 @@ body.theme-light .folder-overlay {
   background: rgba(0, 0, 0, 0.06);
 }
 
-.dialog-btn.primary {
-  background: #4285f4;
-  border-color: #4285f4;
-  color: white;
-}
+ .dialog-btn.primary { background: var(--primary-color); border-color: var(--primary-color); color: #fff; }
 
-.dialog-btn.primary:hover {
-  background: #3367d6;
-  border-color: #3367d6;
-}
+ .dialog-btn.primary:hover { filter: brightness(1.05); }
 
-.dialog-btn.destructive {
-  background: #d93025;
-  border-color: #d93025;
-  color: white;
-}
+ .dialog-btn.destructive { background: var(--color-danger); border-color: var(--color-danger); color: #fff; }
 
-.dialog-btn.destructive:hover {
-  background: #b52d20;
-  border-color: #b52d20;
-}
+ .dialog-btn.destructive:hover { background: var(--color-danger-hover); border-color: var(--color-danger-hover); }
 
-.dialog .warning {
-  color: #ffa726;
-  font-size: 13px;
-  margin: 8px 0 0 0;
-}
+ .dialog .warning { color: var(--color-warning); font-size:13px; margin:8px 0 0 0; }
 
 /* Add tile at end of grid */
-.add-tile {
+ .add-tile {
   width: var(--folder-size);
   height: var(--folder-size);
   border-radius: 18px;
-  border: 2px dashed rgba(255, 255, 255, 0.25);
+  border: 2px dashed var(--add-tile-border, rgba(255,255,255,0.25));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-color);
+  color: var(--add-tile-color, var(--text-color));
   opacity: 0.9;
   cursor: pointer;
-  transition: transform 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+  background: transparent;
+  position: relative;
+  transition: transform 0.18s ease, border-color 0.18s ease, opacity 0.18s ease, background 0.25s ease;
 }
 
 /* Light theme specific styles for add tile */
-body.theme-light .add-tile {
-  border-color: rgba(0, 0, 0, 0.3);
-  color: #666;
-}
-.add-tile:hover, .add-tile:focus-visible {
+
+ .add-tile:hover, .add-tile:focus-visible {
   transform: translateY(-2px);
   border-color: var(--primary-color);
   opacity: 1;
+  background: var(--add-tile-hover-bg, transparent);
 }
+ .add-tile:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary-color) 55%, transparent); }
 .add-tile span {
   font-size: 28px;
   line-height: 1;
@@ -541,6 +515,7 @@ body.theme-light .add-tile {
   display: flex;
   flex-direction: column;
   align-items: center;
+  height: min-content;
 }
 
 /* Clickable square button (like folder-button) */
@@ -636,9 +611,5 @@ body.theme-light .add-tile {
 }
 
 /* Light theme adjustments */
-body.theme-light .link-title { color: #1f2937; }
-body.theme-light .link-button {
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.9);
-}
+body.theme-light .link-title { color: var(--color-text-primary); }
+body.theme-light .link-button { background: var(--tile-bg); border:1px solid var(--tile-border); box-shadow: 0 6px 14px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.6) inset; }

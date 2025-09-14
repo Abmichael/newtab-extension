@@ -8,9 +8,11 @@
       content="NeoTab - Custom new tab page with Android-style folders"
     />
     <title>NeoTab</title>
-  <link rel="stylesheet" href="src/css/main.css" />
-  <link rel="stylesheet" href="src/css/folders.css" />
-  <link rel="stylesheet" href="src/css/animations.css" />
+    <link rel="stylesheet" href="src/css/themes.css" />
+    <link rel="stylesheet" href="src/css/main.css" />
+    <link rel="stylesheet" href="src/css/folders.css" />
+    <link rel="stylesheet" href="src/css/animations.css" />
+    <link rel="icon" type="image/x-icon" href="icons/favicon.ico" />
   </head>
   <body>
     <div id="app">
@@ -41,33 +43,33 @@
       </div>
     </div>
 
-  <!-- Core application dependencies -->
-  <script src="src/js/performance.js"></script>
-  <script src="src/js/error-handler.js"></script>
-  <script src="src/js/storage.js"></script>
-  <script src="src/js/folders.js"></script>
-  <script src="src/js/settings.js"></script>
-  
-  <!-- UI Module Components (loaded in dependency order) -->
-  <!-- Base component manager -->
-  <script src="src/js/ui/ComponentManager.js"></script>
-  <!-- Individual component managers (no cross-dependencies) -->
-  <script src="src/js/ui/NotificationManager.js"></script>
-  <script src="src/js/ui/RenderManager.js"></script>
-  <script src="src/js/ui/DialogManager.js"></script>
-  <script src="src/js/ui/PopoverManager.js"></script>
-  <script src="src/js/ui/ContextMenuManager.js"></script>
-  <script src="src/js/ui/DragDropManager.js"></script>
-  <script src="src/js/ui/SettingsUIManager.js"></script>
-  <script src="src/js/ui/EventHandler.js"></script>
-  <!-- Main UI manager (depends on all components) -->
-  <script src="src/js/ui.js"></script>
-  <!-- UI module exports for future bundling -->
-  <script src="src/js/ui/index.js"></script>
-  <!-- Search bar component -->
-  <script src="src/js/search.js"></script>
-  
-  <!-- Application entry point -->
-  <script src="src/js/app.js"></script>
+    <!-- Core application dependencies -->
+    <script src="src/js/performance.js"></script>
+    <script src="src/js/error-handler.js"></script>
+    <script src="src/js/storage.js"></script>
+    <script src="src/js/folders.js"></script>
+    <script src="src/js/settings.js"></script>
+
+    <!-- UI Module Components (loaded in dependency order) -->
+    <!-- Base component manager -->
+    <script src="src/js/ui/ComponentManager.js"></script>
+    <!-- Individual component managers (no cross-dependencies) -->
+    <script src="src/js/ui/NotificationManager.js"></script>
+    <script src="src/js/ui/RenderManager.js"></script>
+    <script src="src/js/ui/DialogManager.js"></script>
+    <script src="src/js/ui/PopoverManager.js"></script>
+    <script src="src/js/ui/ContextMenuManager.js"></script>
+    <script src="src/js/ui/DragDropManager.js"></script>
+    <script src="src/js/ui/SettingsUIManager.js"></script>
+    <script src="src/js/ui/EventHandler.js"></script>
+    <!-- Main UI manager (depends on all components) -->
+    <script src="src/js/ui.js"></script>
+    <!-- UI module exports for future bundling -->
+    <script src="src/js/ui/index.js"></script>
+    <!-- Search bar component -->
+    <script src="src/js/search.js"></script>
+
+    <!-- Application entry point -->
+    <script src="src/js/app.js"></script>
   </body>
 </html>

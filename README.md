@@ -39,16 +39,8 @@ Transform your Chrome new tab into an organized workspace with beautiful Android
 ## ⚙️ Settings & Customization
 
 ### Themes
-- **Default**: Clean dark theme with blue accents
-- **Light**: Bright theme perfect for daytime use
-- **Ocean**: Calming blue gradient theme
-- **Forest**: Natural green theme for productivity
-- **Sunset**: Warm orange and pink gradient
-
+ **Custom Themes**: 5 beautiful preset themes to match your style (when enabling a custom theme, its starting colors now clone the currently active theme instead of jumping to arbitrary defaults)
 ### Grid Options
-- **Grid Size**: Choose 3, 4, 5, 6, 7, or 8 columns
-- **Tile Size**: Adjustable tile size from 80px to 200px (affects both folders and links)
-- **Responsive**: Smart responsive layout for all devices
 
 ### Clock Widget
 - Toggle on/off

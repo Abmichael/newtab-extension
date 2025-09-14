@@ -22,6 +22,22 @@ class EventHandler extends ComponentManager {
     this.addEventListener(this.container, "contextmenu", this.handleContextMenu.bind(this));
     this.addEventListener(this.container, "keydown", this.handleKeyboard.bind(this));
 
+    // Document-level context menu for popover sites (popover appended to body, not container)
+    this.addEventListener(document, "contextmenu", (e) => {
+      // Ignore if already handled via container (inside container)
+      if (this.container.contains(e.target)) return; 
+      const siteWrapper = e.target.closest('.popover-site');
+      if (!siteWrapper) return;
+      e.preventDefault();
+      const siteContext = {
+        folderId: siteWrapper.dataset.folderId,
+        siteId: siteWrapper.dataset.siteId
+      };
+      if (this.delegates.contextMenu?.showContextMenu) {
+        this.delegates.contextMenu.showContextMenu(e, null, null, siteContext);
+      }
+    });
+
     // Overlay events
     this.addEventListener(this.overlay, "click", this.handleOverlayClick.bind(this));
     
@@ -76,9 +92,18 @@ class EventHandler extends ComponentManager {
     e.preventDefault();
     const folderItem = e.target.closest(".folder-item");
     const linkItem = e.target.closest(".link-item");
-    
+    // Detect site inside popover (has siteId + folderId data attributes)
+    const siteWrapper = e.target.closest('.popover-site');
+    let siteContext = null;
+    if (siteWrapper && siteWrapper.dataset.siteId && siteWrapper.dataset.folderId) {
+      siteContext = {
+        folderId: siteWrapper.dataset.folderId,
+        siteId: siteWrapper.dataset.siteId
+      };
+    }
+
     if (this.delegates.contextMenu?.showContextMenu) {
-      this.delegates.contextMenu.showContextMenu(e, folderItem, linkItem);
+      this.delegates.contextMenu.showContextMenu(e, folderItem, linkItem, siteContext);
     }
   }
 

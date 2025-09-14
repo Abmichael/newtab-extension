@@ -20,6 +20,8 @@ class StorageManager {
         showClock: false,
         clockFormat: "12h",
         clockPosition: "bottom-right",
+  showSeconds: false,
+  clockFreePosition: null, // { xPercent: number, yPercent: number }
         customTheme: false,
         accessibility: {
           highContrast: false,
@@ -167,6 +169,23 @@ class StorageManager {
         typeof settings.theme !== "string"
       ) {
         return false;
+      }
+
+      // Basic validation for optional new fields
+      if (settings.clockPosition && !["top-left","top-right","bottom-left","bottom-right"].includes(settings.clockPosition)) {
+        return false;
+      }
+      if (settings.showSeconds !== undefined && typeof settings.showSeconds !== 'boolean') {
+        return false;
+      }
+      if (settings.clockFreePosition) {
+        const cfp = settings.clockFreePosition;
+        if (typeof cfp !== 'object' || typeof cfp.xPercent !== 'number' || typeof cfp.yPercent !== 'number') {
+          return false;
+        }
+        if (cfp.xPercent < 0 || cfp.xPercent > 100 || cfp.yPercent < 0 || cfp.yPercent > 100) {
+          return false;
+        }
       }
 
       // Validate accessibility settings if present

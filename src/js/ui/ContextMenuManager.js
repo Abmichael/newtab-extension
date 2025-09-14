@@ -21,7 +21,7 @@ class ContextMenuManager extends ComponentManager {
    * @param {HTMLElement} folderItem - The folder element if applicable
    * @param {HTMLElement} linkItem - The link element if applicable
    */
-  showContextMenu(event, folderItem, linkItem) {
+  showContextMenu(event, folderItem, linkItem, siteContext) {
     this.closeContextMenu(); // Close any existing menu
 
     const menu = document.createElement("div");
@@ -29,7 +29,11 @@ class ContextMenuManager extends ComponentManager {
     
     // Store context for handlers
     if (folderItem) menu.dataset.folderId = folderItem.dataset.folderId;
-    if (linkItem) menu.dataset.linkId = linkItem.dataset.linkId;
+    if (linkItem && linkItem.dataset.linkId) menu.dataset.linkId = linkItem.dataset.linkId;
+    if (siteContext) {
+      menu.dataset.siteFolderId = siteContext.folderId;
+      menu.dataset.siteId = siteContext.siteId;
+    }
 
     // Build menu based on target
     if (folderItem) {
@@ -45,6 +49,15 @@ class ContextMenuManager extends ComponentManager {
           <span>Add Site</span>
         </div>
       `;
+    } else if (siteContext) {
+      menu.innerHTML = `
+        <div class="context-item" data-action="open-site">
+          <span>Open</span>
+        </div>
+        <div class="context-item" data-action="delete-site">
+          <span>Delete Site</span>
+        </div>
+      `;
     } else if (linkItem) {
       menu.innerHTML = `
         <div class="context-item" data-action="move-link">
@@ -52,6 +65,9 @@ class ContextMenuManager extends ComponentManager {
         </div>
         <div class="context-item" data-action="folderize-link">
           <span>Create folder from this link</span>
+        </div>
+        <div class="context-item" data-action="delete-link">
+          <span>Delete Link</span>
         </div>
       `;
     } else {
@@ -116,6 +132,8 @@ class ContextMenuManager extends ComponentManager {
         const ctx = {
           folderId: folderItem?.dataset.folderId || menu.dataset.folderId || null,
           linkId: linkItem?.dataset.linkId || menu.dataset.linkId || null,
+          siteFolderId: menu.dataset.siteFolderId || null,
+          siteId: menu.dataset.siteId || null,
           event,
         };
         this.handleContextAction(action, ctx);
@@ -171,8 +189,10 @@ class ContextMenuManager extends ComponentManager {
    * @param {Object} ctx - Context object with folderId, linkId, and event
    */
   handleContextAction(action, ctx) {
-    const folderId = ctx?.folderId || null;
-    const linkId = ctx?.linkId || null;
+  const folderId = ctx?.folderId || null;
+  const linkId = ctx?.linkId || null;
+  const siteFolderId = ctx?.siteFolderId || null;
+  const siteId = ctx?.siteId || null;
 
     try {
       switch (action) {
@@ -193,6 +213,28 @@ class ContextMenuManager extends ComponentManager {
           break;
         case "folderize-link":
           if (linkId) this.createFolderFromSingleLink(linkId);
+          break;
+        case "delete-link":
+          if (linkId && this.dialogManager?.showDeleteLinkDialog) {
+            this.dialogManager.showDeleteLinkDialog(linkId);
+          }
+          break;
+        case "open-site":
+          if (siteFolderId && siteId) {
+            try {
+              const { site } = this.folderSystem.getSiteById(siteFolderId, siteId);
+              if (site?.url) {
+                window.location.href = site.url;
+              }
+            } catch (err) {
+              console.error('Failed to open site from context menu', err);
+            }
+          }
+          break;
+        case "delete-site":
+          if (siteFolderId && siteId && this.dialogManager?.showDeleteSiteDialog) {
+            this.dialogManager.showDeleteSiteDialog(siteFolderId, siteId);
+          }
           break;
         default:
           console.warn("Unknown context action:", action);
