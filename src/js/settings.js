@@ -389,6 +389,9 @@ class SettingsManager {
       const data = await this.storage.loadData();
       const exportData = {
         folders: data.folders,
+        links: data.links,
+        rootOrder: data.rootOrder,
+        meta: data.meta,
         settings: data.settings,
         version: data.version,
         exportDate: new Date().toISOString(),
@@ -433,6 +436,9 @@ class SettingsManager {
       // Import new data
       const newData = {
         folders: importData.folders || [],
+        links: importData.links || [],
+        rootOrder: importData.rootOrder || [],
+        meta: importData.meta || this.storage.defaultData.meta,
         settings: {
           ...this.getDefaultSettings(),
           ...(importData.settings || {}),

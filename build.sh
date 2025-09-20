@@ -19,7 +19,7 @@ cp -r icons $BUILD_DIR/
 # Minify CSS files using clean-css-cli
 echo "📦 Minifying CSS with clean-css..."
 # Combine all CSS files first
-cat $SRC_DIR/css/main.css $SRC_DIR/css/folders.css $SRC_DIR/css/animations.css > $BUILD_DIR/css/combined.css
+cat $SRC_DIR/css/main.css $SRC_DIR/css/folders.css $SRC_DIR/css/animations.css $SRC_DIR/css/themes.css > $BUILD_DIR/css/combined.css
 
 # Minify with clean-css (optimization level 2)
 cleancss -O 2 $BUILD_DIR/css/combined.css -o $BUILD_DIR/css/styles.min.css
@@ -31,6 +31,7 @@ echo "📦 Minifying JavaScript with terser..."
 cat $SRC_DIR/js/performance.js \
     $SRC_DIR/js/error-handler.js \
     $SRC_DIR/js/storage.js \
+    $SRC_DIR/js/search.js \
     $SRC_DIR/js/folders.js \
     $SRC_DIR/js/settings.js \
     $SRC_DIR/js/ui/ComponentManager.js \
@@ -42,8 +43,8 @@ cat $SRC_DIR/js/performance.js \
     $SRC_DIR/js/ui/PopoverManager.js \
     $SRC_DIR/js/ui/SettingsUIManager.js \
     $SRC_DIR/js/ui/EventHandler.js \
-    $SRC_DIR/js/ui/index.js \
     $SRC_DIR/js/ui.js \
+    $SRC_DIR/js/ui/index.js \
     $SRC_DIR/js/app.js > $BUILD_DIR/js/combined.js
 
 # Minify with terser (aggressive optimization, remove console.log)
@@ -63,15 +64,16 @@ cat > $BUILD_DIR/index.html << 'EOF'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NeoTab</title>
+    <title>new tab</title>
+    <!-- Prevent theme flash: hide UI until settings apply -->
+    <style>body.preload{display:none;}</style>
     <link rel="stylesheet" href="css/styles.min.css">
 </head>
-<body>
+<body class="preload">
     <div id="app">
         <header class="header">
-            <h1 class="logo">NeoTab</h1>
-            <div class="header-actions">
                 <div class="clock" id="clock"></div>
+            <div class="header-actions">
                 <button class="settings-btn" id="settings-button">
                     <span>⚙️</span>
                     Settings
@@ -79,17 +81,18 @@ cat > $BUILD_DIR/index.html << 'EOF'
             </div>
         </header>
         <main class="main-content">
-            <div class="folder-grid" id="folder-grid">
-                <!-- Folders will be dynamically generated here -->
+            <div class="main-content-inner">
+                <div class="search-bar" id="search-bar-container">
+                    <!-- Search bar will be initialized here -->
+                </div>
+                <div class="folder-grid" id="folder-grid">
+                    <!-- Folders and Links will be dynamically generated here -->
+                </div>
             </div>
         </main>
         <div class="folder-overlay" id="folder-overlay">
             <!-- Folder content overlay will be generated here -->
         </div>
-                <button class="add-button" id="add-button" aria-label="Add Folder">
-                    <span class="icon">📁</span>
-                    <span class="label">Add Folder</span>
-                </button>
     </div>
     <script src="js/app.min.js"></script>
 </body>

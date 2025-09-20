@@ -18,8 +18,8 @@ class NeoTabApp {
     // Initialize storage and load data
     await this.initializeData();
 
-    // Initialize settings manager
-    await this.settingsManager.init();
+  // Initialize settings manager
+  await this.settingsManager.init();
 
     // Notify search component that settings are ready
     if (window.__neotabSearchRefresh) {
@@ -62,6 +62,16 @@ class NeoTabApp {
       this.ui = new UIManager(grid, overlay, this.folderSystem);
       this.ui.renderGrid(this.data.folders, this.data.links || []);
     }
+
+    // Reveal UI now that settings and initial render are done
+    try {
+      document.body.classList.remove("preload");
+    } catch (_) { /* ignore */ }
+
+    // Safety: ensure UI is visible even if something above failed
+    setTimeout(() => {
+      try { document.body.classList.remove("preload"); } catch (_) {}
+    }, 1500);
 
     // Update clock every second (the settings manager also has its own clock)
     setInterval(() => this.updateClock(), 1000);

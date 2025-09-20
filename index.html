@@ -7,19 +7,23 @@
       name="description"
       content="NeoTab - Custom new tab page with Android-style folders"
     />
-    <title>NeoTab</title>
+    <title>new tab</title>
+    <!-- Prevent theme flash: hide UI until settings apply -->
+    <style>
+      /* Keep this tiny and inline so it applies immediately */
+      body.preload { display: none; }
+    </style>
     <link rel="stylesheet" href="src/css/themes.css" />
     <link rel="stylesheet" href="src/css/main.css" />
     <link rel="stylesheet" href="src/css/folders.css" />
     <link rel="stylesheet" href="src/css/animations.css" />
     <link rel="icon" type="image/x-icon" href="icons/favicon.ico" />
   </head>
-  <body>
+  <body class="preload">
     <div id="app">
       <header class="header">
-        <h1 class="logo">NeoTab</h1>
+        <div class="clock" id="clock"></div>
         <div class="header-actions">
-          <div class="clock" id="clock"></div>
           <button class="settings-btn" id="settings-button">
             <span>⚙️</span>
             Settings
