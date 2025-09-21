@@ -101,10 +101,16 @@ class PopoverManager extends ComponentManager {
     button.setAttribute("title", site.name || site.url);
 
     const img = document.createElement("img");
-    const favicon = site.icon || this.folderSystem.generateFaviconUrl(site.url);
+    const favicon = this.folderSystem.getIconSrc(site);
     img.src = favicon;
     img.loading = "lazy";
     img.alt = site.name || "Site";
+    
+    // Add error handler for favicon fallback
+    img.onerror = () => {
+      img.src = this.folderSystem.generateFallbackFaviconUrl(site.url);
+    };
+    
     button.appendChild(img);
 
     const label = document.createElement("div");

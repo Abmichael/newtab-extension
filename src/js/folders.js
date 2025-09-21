@@ -37,7 +37,71 @@ class FolderSystem {
     // Ensure meta block exists
     if (!this.data.meta)
       this.data.meta = { lastTopSitesSync: 0, topSitesSeeded: false };
+
+    // Normalize icons after loading
+    this.normalizeIcons();
+
     return this.folders;
+  }
+
+  /**
+   * Normalize all icons to object format {type: 'generated'|'static', pageUrl?: string, url?: string, size?: number}
+   * Handles backward compatibility for string icons
+   */
+  normalizeIcons() {
+    const normalizeSingle = (item) => {
+      if (!item || !item.url) return;
+
+      if (!item.icon) {
+        item.icon = { type: 'generated', pageUrl: item.url, size: 32 };
+        return;
+      }
+
+      if (typeof item.icon === 'object' && item.icon.type) {
+        return; // already normalized
+      }
+
+      // Handle string icon
+      const iconStr = String(item.icon);
+      const match = iconStr.match(/^chrome-extension:\/\/[^\/]+\/_favicon\/\?pageUrl=([^&]+)&size=(\d+)$/);
+      if (match) {
+        const [, encodedPageUrl, sizeStr] = match;
+        item.icon = {
+          type: 'generated',
+          pageUrl: decodeURIComponent(encodedPageUrl),
+          size: parseInt(sizeStr) || 32
+        };
+      } else {
+        item.icon = { type: 'static', url: iconStr };
+      }
+    };
+
+    // Normalize root links
+    this.links.forEach(normalizeSingle);
+
+    // Normalize sites in folders
+    this.folders.forEach(folder => {
+      if (Array.isArray(folder.sites)) {
+        folder.sites.forEach(normalizeSingle);
+      }
+    });
+  }
+
+  /**
+   * Get the src URL for an icon object or generate if needed
+   * @param {Object} item - link or site object
+   * @returns {string} icon src URL
+   */
+  getIconSrc(item) {
+    if (!item || !item.icon) {
+      return this.generateFaviconUrl(item.url, 32);
+    }
+
+    const icon = item.icon;
+    if (icon.type === 'generated') {
+      return this.generateFaviconUrl(icon.pageUrl, icon.size || 32);
+    }
+    return icon.url || this.generateFaviconUrl(item.url, 32);
   }
 
   /** Persist current data to storage */
@@ -315,11 +379,19 @@ class FolderSystem {
     } catch {
       throw new Error("Invalid URL");
     }
+    let iconObj;
+    if (linkData?.icon) {
+      iconObj = typeof linkData.icon === 'string' 
+        ? { type: 'static', url: linkData.icon } 
+        : linkData.icon;
+    } else {
+      iconObj = { type: 'generated', pageUrl: url, size: 32 };
+    }
     const link = {
       id: this.generateId(),
       name,
       url,
-      icon: linkData?.icon || this.generateFaviconUrl(url),
+      icon: iconObj,
     };
     this.links.push(link);
     this.rootOrder.push({ type: "link", id: link.id });
@@ -341,12 +413,19 @@ class FolderSystem {
       }
       link.url = u;
       // refresh icon if not explicitly set
-      if (!data.icon) {
-        link.icon = this.generateFaviconUrl(u);
+      if (!("icon" in data)) {
+        link.icon = { type: 'generated', pageUrl: u, size: 32 };
       }
     }
-    if ("icon" in data)
-      link.icon = data.icon || this.generateFaviconUrl(link.url);
+    if ("icon" in data) {
+      if (data.icon) {
+        link.icon = typeof data.icon === 'string' 
+          ? { type: 'static', url: data.icon } 
+          : data.icon;
+      } else {
+        link.icon = { type: 'generated', pageUrl: link.url, size: 32 };
+      }
+    }
     await this.save();
     return link;
   }
@@ -385,12 +464,12 @@ class FolderSystem {
       (e) => !(e.type === "link" && e.id === linkId)
     );
 
-    // Convert to site
+    // Convert to site, copy icon object
     const site = {
       id: this.generateId(),
       name: this.sanitizeInput(link.name),
       url: this.sanitizeUrl(link.url),
-      icon: link.icon || this.generateFaviconUrl(link.url),
+      icon: link.icon || { type: 'generated', pageUrl: link.url, size: 32 },
     };
     folder.sites.push(site);
     await this.save();
@@ -443,7 +522,7 @@ class FolderSystem {
         id: this.generateId(),
         name: this.sanitizeInput(l.name),
         url: this.sanitizeUrl(l.url),
-        icon: l.icon || this.generateFaviconUrl(l.url),
+        icon: l.icon || { type: 'generated', pageUrl: l.url, size: 32 },
       })),
     };
 
@@ -483,12 +562,20 @@ class FolderSystem {
       throw new Error("Invalid URL");
     }
 
+    let iconObj;
+    if (siteData?.icon) {
+      iconObj = typeof siteData.icon === 'string' 
+        ? { type: 'static', url: siteData.icon } 
+        : siteData.icon;
+    } else {
+      iconObj = { type: 'generated', pageUrl: url, size: 32 };
+    }
+
     const site = {
       id: this.generateId(),
       name,
       url,
-      icon: siteData?.icon || this.generateFaviconUrl(url),
-      ...["id", "name", "url", "icon"].reduce((acc, k) => acc, {}),
+      icon: iconObj,
     };
     folder.sites.push(site);
     await this.save();
@@ -513,9 +600,19 @@ class FolderSystem {
         throw new Error("Invalid URL");
       }
       site.url = u;
+      if (!("icon" in data)) {
+        site.icon = { type: 'generated', pageUrl: u, size: 32 };
+      }
     }
-    if ("icon" in data)
-      site.icon = data.icon || this.generateFaviconUrl(site.url);
+    if ("icon" in data) {
+      if (data.icon) {
+        site.icon = typeof data.icon === 'string' 
+          ? { type: 'static', url: data.icon } 
+          : data.icon;
+      } else {
+        site.icon = { type: 'generated', pageUrl: site.url, size: 32 };
+      }
+    }
     // Copy any additional metadata fields except id
     for (const [k, v] of Object.entries(data)) {
       if (k === "id" || k === "name" || k === "url" || k === "icon") continue;
@@ -544,12 +641,12 @@ class FolderSystem {
     if (idx === -1) throw new Error("Site not found");
     const [site] = folder.sites.splice(idx, 1);
 
-    // Create a root link from site
+    // Create a root link from site, copy icon object
     const link = {
       id: this.generateId(),
       name: this.sanitizeInput(site.name),
       url: this.sanitizeUrl(site.url),
-      icon: site.icon || this.generateFaviconUrl(site.url),
+      icon: site.icon || { type: 'generated', pageUrl: site.url, size: 32 },
     };
     this.links.push(link);
     const entry = { type: "link", id: link.id };
@@ -562,43 +659,28 @@ class FolderSystem {
     return link;
   }
 
-  /** Move a site between folders */
-  async moveSiteBetweenFolders(sourceFolderId, siteId, targetFolderId) {
-    if (sourceFolderId === targetFolderId)
-      return this.getFolderById(targetFolderId);
-    const source = this.getFolderById(sourceFolderId);
-    const target = this.getFolderById(targetFolderId);
-    if (!source || !target) throw new Error("Folder not found");
-    const idx = source.sites.findIndex((s) => s.id === siteId);
-    if (idx === -1) throw new Error("Site not found");
-    const [site] = source.sites.splice(idx, 1);
-    target.sites.push(site);
-    await this.save();
-    return target;
-  }
-
   /** Generate a favicon URL from a site URL */
-  generateFaviconUrl(url) {
+  generateFaviconUrl(url, size = 32) {
     try {
       // Use Chrome Extension Favicon API (requires "favicon" permission)
       const faviconBaseUrl = new URL(chrome.runtime.getURL("/_favicon/"));
       faviconBaseUrl.searchParams.set("pageUrl", url);
-      faviconBaseUrl.searchParams.set("size", "32");
+      faviconBaseUrl.searchParams.set("size", size.toString());
       return faviconBaseUrl.toString();
     } catch (e) {
       // Fallback for invalid URLs or when chrome.runtime is not available
-      return this.generateFallbackFaviconUrl(url);
+      return this.generateFallbackFaviconUrl(url, size);
     }
   }
 
   /** Generate a fallback favicon URL for browsers that don't support chrome://favicon */
-  generateFallbackFaviconUrl(url) {
+  generateFallbackFaviconUrl(url, size = 32) {
     try {
       const u = new URL(url);
       // Use Google's favicon service as fallback
-      return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=32`;
+      return `https://www.google.com/s2/favicons?domain=${u.hostname}&sz=${size}`;
     } catch (e) {
-      return "https://www.google.com/s2/favicons?domain=duckduckgo.com&sz=32";
+      return `https://www.google.com/s2/favicons?domain=duckduckgo.com&sz=${size}`;
     }
   }
 

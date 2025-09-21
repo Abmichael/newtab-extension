@@ -140,7 +140,7 @@ class RenderManager extends ComponentManager {
       if (previews[i]) {
         const img = document.createElement("img");
         const url = previews[i].url;
-        const src = previews[i].icon || this.folderSystem.generateFaviconUrl(url);
+        const src = this.folderSystem.getIconSrc(previews[i]);
         img.src = src;
         img.loading = "lazy";
         img.alt = previews[i].name || "Site";
@@ -199,7 +199,7 @@ class RenderManager extends ComponentManager {
     button.setAttribute("title", link.name || link.url);
 
     const img = document.createElement("img");
-    const favicon = link.icon || this.folderSystem.generateFaviconUrl(link.url);
+    const favicon = this.folderSystem.getIconSrc(link);
     img.src = favicon;
     img.loading = "lazy";
     img.alt = link.name || "Link";
