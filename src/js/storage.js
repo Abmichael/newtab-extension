@@ -1,7 +1,7 @@
-// NeoTab - Chrome Storage API Integration Layer
+// newtab - Chrome Storage API Integration Layer
 class StorageManager {
   constructor() {
-    this.storageKey = "neotab_data";
+    this.storageKey = "newtab_data";
     this.defaultData = {
       folders: [],
       links: [],

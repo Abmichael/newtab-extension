@@ -3,8 +3,8 @@
   "name": "new tab",
   "version": "1.0.0",
   "description": "Transform your new tab into an organized workspace with Android-style folders for your favorite sites and bookmarks.",
-  "author": "NeoTab Team",
-  "homepage_url": "https://github.com/neotab/extension",
+  "author": "newtab Team",
+  "homepage_url": "https://github.com/newtab/extension",
 
   "chrome_url_overrides": {
     "newtab": "index.html"

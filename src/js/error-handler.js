@@ -1,5 +1,5 @@
 /**
- * Global error handling and reporting system for NeoTab extension
+ * Global error handling and reporting system for newtab extension
  * Provides graceful error recovery and user-friendly error messages
  */
 class ErrorHandler {
@@ -196,7 +196,7 @@ class ErrorHandler {
 
   logInfo(message) {
     if (this.isDevelopment) {
-      console.log("[NeoTab]", message);
+      console.log("[newtab]", message);
     }
   }
 

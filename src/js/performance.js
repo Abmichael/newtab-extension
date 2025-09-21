@@ -1,5 +1,5 @@
 /**
- * Performance monitoring utilities for NeoTab extension
+ * Performance monitoring utilities for newtab extension
  * Tracks load times, memory usage, and performance metrics
  */
 class PerformanceMonitor {

@@ -611,8 +611,8 @@ class SettingsUIManager extends ComponentManager {
       this.emit('notification', { message: 'Settings saved successfully!', type: 'success' });
       this.emit('settingsChanged', newSettings);
       // Refresh search bar if component hook available
-      if(typeof window.__neotabSearchRefresh === 'function' && newSettings.searchEngine){
-        window.__neotabSearchRefresh();
+      if(typeof window.__newtabSearchRefresh === 'function' && newSettings.searchEngine){
+        window.__newtabSearchRefresh();
       }
     } catch (error) {
       console.error("Failed to save settings:", error);
@@ -626,7 +626,7 @@ class SettingsUIManager extends ComponentManager {
   async exportData() {
     try {
       const data = await this.settingsManager.exportData();
-      this.downloadFile(data, "neotab-backup.json");
+      this.downloadFile(data, "newtab-backup.json");
       this.emit('notification', { message: 'Data exported successfully!', type: 'success' });
     } catch (error) {
       console.error("Export failed:", error);
@@ -726,7 +726,7 @@ class SettingsUIManager extends ComponentManager {
    * Inject or update an ephemeral <style> block for live custom theme preview only.
    */
   applyCustomThemePreview(custom) {
-    const id = 'neotab-custom-theme-preview';
+    const id = 'newtab-custom-theme-preview';
     let styleEl = document.getElementById(id);
     if (!styleEl) {
       styleEl = document.createElement('style');
@@ -739,7 +739,7 @@ class SettingsUIManager extends ComponentManager {
   }
 
   removeCustomThemePreview() {
-    const styleEl = document.getElementById('neotab-custom-theme-preview');
+    const styleEl = document.getElementById('newtab-custom-theme-preview');
     if (styleEl) styleEl.remove();
     document.body.classList.remove('theme-custom');
   }

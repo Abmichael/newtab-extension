@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Professional NeoTab Build Script using Node.js minifiers
+# Professional newtab Build Script using Node.js minifiers
 # Uses terser for JS, clean-css for CSS, and html-minifier for HTML
 
 BUILD_DIR="dist"
 SRC_DIR="src"
 
-echo "🚀 Building NeoTab with professional minifiers..."
+echo "🚀 Building newtab with professional minifiers..."
 
 # Clean and create build directory
 rm -rf $BUILD_DIR
@@ -125,7 +125,7 @@ terser $BUILD_DIR/background.js \
 
 # Create build info
 cat > $BUILD_DIR/BUILD_INFO.md << EOF
-# NeoTab Production Build
+# newtab Production Build
 
 Built on: $(date)
 Build tool: Professional Node.js minifiers

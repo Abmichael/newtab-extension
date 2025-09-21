@@ -1,4 +1,4 @@
-// NeoTab - Event Handler Component
+// newtab - Event Handler Component
 // Centralized event handling and delegation for all UI interactions
 
 class EventHandler extends ComponentManager {

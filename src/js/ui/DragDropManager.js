@@ -1,4 +1,4 @@
-// NeoTab - Drag and Drop Manager Component
+// newtab - Drag and Drop Manager Component
 // Handles simplified drag and drop functionality for merging operations only
 
 class DragDropManager extends ComponentManager {
@@ -291,7 +291,7 @@ class DragDropManager extends ComponentManager {
    */
   triggerFullRerender() {
     // Emit a custom event that the app can listen to for re-rendering
-    const event = new CustomEvent('neotab:refresh-needed', { 
+    const event = new CustomEvent('newtab:refresh-needed', { 
       bubbles: true,
       detail: { reason: 'drag-drop-error' }
     });

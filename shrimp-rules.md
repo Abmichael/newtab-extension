@@ -1,4 +1,4 @@
-# NeoTab Chrome Extension Development Guidelines
+# newtab Chrome Extension Development Guidelines
 
 ## Project Overview
 
@@ -22,7 +22,7 @@
 ```json
 {
   "manifest_version": 3,
-  "name": "NeoTab",
+  "name": "newtab",
   "version": "1.0",
   "chrome_url_overrides": {
     "newtab": "index.html"
@@ -80,7 +80,7 @@
 // CORRECT: Use chrome.storage.local for all data persistence
 const saveData = async (data) => {
   try {
-    await chrome.storage.local.set({ neoTabData: data });
+    await chrome.storage.local.set({ newtabData: data });
   } catch (error) {
     console.error('Storage failed:', error);
     // Implement fallback strategy
@@ -89,8 +89,8 @@ const saveData = async (data) => {
 
 const loadData = async () => {
   try {
-    const result = await chrome.storage.local.get(['neoTabData']);
-    return result.neoTabData || getDefaultData();
+    const result = await chrome.storage.local.get(['newtabData']);
+    return result.newtabData || getDefaultData();
   } catch (error) {
     console.error('Storage retrieval failed:', error);
     return getDefaultData();
@@ -359,12 +359,12 @@ const performAction = async (action, data) => {
 const Logger = {
   debug: (message, data) => {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[NeoTab Debug] ${message}`, data);
+      console.log(`[newtab Debug] ${message}`, data);
     }
   },
   
   error: (message, error) => {
-    console.error(`[NeoTab Error] ${message}`, error);
+    console.error(`[newtab Error] ${message}`, error);
     // Report to error tracking if available
   }
 };

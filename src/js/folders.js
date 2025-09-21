@@ -1,4 +1,4 @@
-// NeoTab - Folder System Business Logic (no UI dependencies)
+// newtab - Folder System Business Logic (no UI dependencies)
 // Depends on StorageManager for persistence, validation, and sanitization
 
 class FolderSystem {

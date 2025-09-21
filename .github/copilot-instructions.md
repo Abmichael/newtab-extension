@@ -54,7 +54,7 @@
 	 -->
 
 <!--
-## Chrome Extension Project - NeoTab
+## Chrome Extension Project - newtab
 A custom new tab page Chrome extension with Android-style folders for organizing bookmarks.
 
 ### Project Requirements:

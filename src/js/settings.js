@@ -1,4 +1,4 @@
-// NeoTab - Settings Management and Customization Features
+// newtab - Settings Management and Customization Features
 class SettingsManager {
   constructor(storageManager) {
     this.storage = storageManager;
@@ -430,7 +430,7 @@ class SettingsManager {
         chrome.storage &&
         chrome.storage.local
       ) {
-        await chrome.storage.local.set({ neotab_backup: backupData });
+        await chrome.storage.local.set({ newtab_backup: backupData });
       }
 
       // Import new data
@@ -466,7 +466,7 @@ class SettingsManager {
       return false;
     }
 
-    // Check if it's a valid NeoTab export
+    // Check if it's a valid newtab export
     if (!data.exportDate && !data.folders && !data.settings) {
       return false;
     }

@@ -1,5 +1,5 @@
-// NeoTab - Main Application Entry Point
-class NeoTabApp {
+// newtab - Main Application Entry Point
+class newtabApp {
   constructor() {
     this.storageManager = new StorageManager();
     this.folderSystem = new FolderSystem(this.storageManager);
@@ -22,8 +22,8 @@ class NeoTabApp {
   await this.settingsManager.init();
 
     // Notify search component that settings are ready
-    if (window.__neotabSearchRefresh) {
-      window.__neotabSearchRefresh();
+    if (window.__newtabSearchRefresh) {
+      window.__newtabSearchRefresh();
     }
 
     this.updateClock();
@@ -137,7 +137,7 @@ class NeoTabApp {
 
     // Listen for refresh requests from drag and drop operations
     if (folderGrid) {
-      folderGrid.addEventListener("neotab:refresh-needed", (event) => {
+      folderGrid.addEventListener("newtab:refresh-needed", (event) => {
         console.log("Refreshing grid due to:", event.detail?.reason);
         this.refreshGrid();
       });
@@ -193,8 +193,8 @@ class NeoTabApp {
 // Initialize the app once
 (function initOnce() {
   const start = () => {
-    if (!window.__neotabApp) {
-      window.__neotabApp = new NeoTabApp();
+    if (!window.__newtabApp) {
+      window.__newtabApp = new newtabApp();
     }
   };
   if (document.readyState === "loading") {

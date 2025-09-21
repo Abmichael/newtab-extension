@@ -1,8 +1,8 @@
-# NeoTab - Android-Style New Tab Extension
+# newtab - Android-Style New Tab Extension
 
 Transform your Chrome new tab into an organized workspace with beautiful Android-style folders for your favorite sites and bookmarks.
 
-![NeoTab Preview](https://via.placeholder.com/800x400/1a1a1a/ffffff?text=NeoTab+Preview)
+![newtab Preview](icons/preview.png)
 
 ## 🌟 Features
 
@@ -13,21 +13,17 @@ Transform your Chrome new tab into an organized workspace with beautiful Android
 - **Clock Widget**: Optional digital clock with customizable format
 - **Import/Export**: Backup and restore your configuration
 - **Offline-First**: Works completely offline with local storage
-- **Lightweight**: Under 50KB total bundle size for fast loading
+- **Lightweight**: Optimized for fast loading
 
 ## 📦 Installation
 
-### From Chrome Web Store (Recommended)
-1. Visit the [NeoTab Chrome Web Store page](https://chrome.google.com/webstore)
-2. Click "Add to Chrome"
-3. Open a new tab to start using NeoTab!
-
 ### Manual Installation (Developer Mode)
 1. Download or clone this repository
+2. run build.sh
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable "Developer mode" in the top right
-4. Click "Load unpacked" and select the extension folder
-5. Open a new tab to see NeoTab in action!
+4. Click "Load unpacked" and select the dist folder
+5. Open a new tab to see newtab in action!
 
 ## 🚀 Quick Start
 
@@ -51,25 +47,50 @@ Transform your Chrome new tab into an organized workspace with beautiful Android
 
 ### Project Structure
 ```
-NeoTab/
+newtab/
 ├── manifest.json          # Extension manifest
 ├── index.html             # Main new tab page
 ├── background.js          # Service worker
-├── src/
-│   ├── css/
-│   │   ├── main.css       # Main styles
-│   │   ├── folders.css    # Folder-specific styles
-│   │   └── animations.css # Animations and transitions
-│   └── js/
-│       ├── app.js         # Main application
-│       ├── storage.js     # Chrome storage wrapper
-│       ├── folders.js     # Folder business logic
-│       ├── settings.js    # Settings management
-│       ├── ui.js          # UI management
-│       ├── performance.js # Performance monitoring
-│       └── error-handler.js # Error handling
+├── build.sh               # Build script
 ├── icons/                 # Extension icons
-└── build/                 # Production build output
+│   ├── favicon-32x32.png
+│   ├── favicon.ico
+│   ├── icon-128.png
+│   ├── icon-16.png
+│   ├── icon-32.png
+│   ├── icon-48.png
+│   └── preview.png
+├── search-engines/        # Search engine icons
+│   ├── bing.svg
+│   ├── brave.svg
+│   ├── duckduckgo.svg
+│   └── google.svg
+└── src/
+    ├── css/
+    │   ├── animations.css # Animations and transitions
+    │   ├── folders.css    # Folder-specific styles
+    │   ├── main.css       # Main styles
+    │   └── themes.css     # Theme styles
+    └── js/
+        ├── app.js         # Main application
+        ├── error-handler.js # Error handling
+        ├── folders.js     # Folder business logic
+        ├── performance.js # Performance monitoring
+        ├── search.js      # Search functionality
+        ├── settings.js    # Settings management
+        ├── storage.js     # Chrome storage wrapper
+        ├── ui.js          # UI management
+        └── ui/            # UI components
+            ├── ComponentManager.js
+            ├── ContextMenuManager.js
+            ├── DialogManager.js
+            ├── DragDropManager.js
+            ├── EventHandler.js
+            ├── index.js
+            ├── NotificationManager.js
+            ├── PopoverManager.js
+            ├── RenderManager.js
+            └── SettingsUIManager.js
 ```
 
 ### Building for Production
@@ -86,8 +107,8 @@ NeoTab/
 
 ```bash
 # Clone the repository
-git clone https://github.com/neotab/extension.git
-cd neotab
+git clone https://github.com/Abmichael/newtab-extension.git
+cd newtab-extension
 
 # Load the extension in Chrome
 # 1. Open chrome://extensions/
@@ -105,7 +126,6 @@ cd neotab
 - **Manifest V3**: Latest Chrome extension standards
 
 ### Performance Targets
-- ✅ Bundle size under 50KB
 - ✅ Load time under 100ms
 - ✅ Memory usage under 10MB
 - ✅ 60fps animations
@@ -117,7 +137,7 @@ cd neotab
 
 ## 📱 Responsive Design
 
-NeoTab works perfectly on all screen sizes:
+X works perfectly on all screen sizes:
 
 - **Desktop**: Full-featured experience with hover effects
 - **Tablet**: Touch-optimized interactions
@@ -167,7 +187,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - Follow the existing code style
 - Add comments for complex logic
 - Ensure all features work offline
-- Maintain the <50KB bundle size limit
+- Maintain the <200KB bundle size limit
 
 ## 📄 License
 
@@ -176,14 +196,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 - Inspired by Android's folder system
-- Icons from [Material Design Icons](https://materialdesignicons.com/)
-- Color palettes from [Coolors.co](https://coolors.co/)
+- Developed with support from GitHub Copilot
 
 ## 📞 Support
 
-- 🐛 [Report Issues](https://github.com/neotab/extension/issues)
-- 💬 [Discussions](https://github.com/neotab/extension/discussions)
-- 📧 [Email Support](mailto:support@neotab.com)
+- 🐛 [Report Issues](https://github.com/Abmichael/newtab-extension/issues)
+- 💬 [Discussions](https://github.com/Abmichael/newtab-extension/discussions)
+- 📧 [Email Support](mailto:abrahammgag@gmail.com)
 
 ## 🗺️ Roadmap
 
@@ -196,4 +215,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by the NeoTab Team**
+**Made with ❤️ by Abraham, with support from GitHub Copilot AI agent**
