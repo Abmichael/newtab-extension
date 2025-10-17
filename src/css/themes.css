@@ -81,6 +81,7 @@
 
   /* Layout / sizing */
   --grid-size: 4;
+  --main-grid-columns: auto;
   --folder-size: 120px;
   --gap-size: 24px;
 }

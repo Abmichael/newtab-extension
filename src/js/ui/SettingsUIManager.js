@@ -65,8 +65,25 @@ class SettingsUIManager extends ComponentManager {
             
             <div class="settings-section" data-section="layout">
               <div class="setting-group">
-                <label class="setting-label">Grid Size</label>
-                <div class="setting-description">Number of columns in the folder grid</div>
+                <label class="setting-label">Main Grid Columns</label>
+                <div class="setting-description">Number of columns in the main page grid (Auto adjusts based on screen size)</div>
+                <div class="setting-range">
+                  <select class="setting-select" id="main-grid-columns">
+                    <option value="auto">Auto</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                  </select>
+                </div>
+              </div>
+              <div class="setting-group">
+                <label class="setting-label">Folder Grid Columns</label>
+                <div class="setting-description">Number of columns inside folder popovers</div>
                 <div class="setting-range">
                   <input type="range" class="setting-slider" id="grid-columns" min="2" max="8" value="5">
                   <span class="range-value" id="grid-columns-value">5</span>
@@ -338,6 +355,8 @@ class SettingsUIManager extends ComponentManager {
     });
 
     // Layout settings
+  const mainGridValue = settings.mainGridColumns === 'auto' ? 'auto' : String(settings.mainGridColumns || 'auto');
+  modal.querySelector("#main-grid-columns").value = mainGridValue;
   modal.querySelector("#grid-columns").value = settings.gridSize || settings.gridColumns || 5;
   modal.querySelector("#grid-columns-value").textContent = settings.gridSize || settings.gridColumns || 5;
     modal.querySelector("#tile-size").value = settings.tileSize || 120;
@@ -570,6 +589,8 @@ class SettingsUIManager extends ComponentManager {
       }
 
       // Layout settings
+  const mainGridSelect = modal.querySelector("#main-grid-columns").value;
+  newSettings.mainGridColumns = mainGridSelect === 'auto' ? 'auto' : parseInt(mainGridSelect);
   newSettings.gridSize = parseInt(modal.querySelector("#grid-columns").value);
       newSettings.tileSize = parseInt(modal.querySelector("#tile-size").value);
 

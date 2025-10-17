@@ -110,8 +110,8 @@ body.theme-light .clock-widget {
 /* Search bar container */
 .search-bar {
   width: 100%;
-  max-width: 900px;
-  margin: 12px auto 8px;
+  max-width: 584px; /* Google search bar width */
+  margin: 24px auto 8px;
   display: flex;
   justify-content: center;
   position: relative;
@@ -120,71 +120,100 @@ body.theme-light .clock-widget {
 .search-bar form {
   flex: 1;
   display: flex;
-  align-items: stretch;
-  max-width: 900px;
-  background: var(--search-form-bg);
-  backdrop-filter: blur(18px) saturate(160%);
-  border: 1px solid var(--search-form-border);
-  border-radius: 20px;
+  align-items: center;
+  max-width: 584px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(223, 225, 229, 0);
+  border-radius: 12px;
   overflow: hidden;
-  box-shadow: var(--search-form-shadow);
-  transition: box-shadow 0.25s ease, background 0.35s ease, transform 0.25s ease;
+  box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+  transition: box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.search-bar form:hover {
+  box-shadow: 0 1px 6px rgba(32, 33, 36, 0.35);
+  background: rgba(255, 255, 255, 1);
 }
 
 .search-bar form:focus-within {
-  box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--primary-color) 55%, transparent),
-    0 10px 34px -10px rgba(0, 0, 0, 0.6);
-  transform: translateY(-2px);
+  box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(223, 225, 229, 0);
+}
+
+/* Dark theme adjustments */
+body:not(.theme-light) .search-bar form {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+
+body:not(.theme-light) .search-bar form:hover {
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+}
+
+body:not(.theme-light) .search-bar form:focus-within {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .search-leading {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 18px 0 16px;
+  gap: 8px;
+  padding: 0 4px 0 14px;
 }
 
 .search-leading .engine-badge {
   background: transparent;
   padding: 0;
   margin: 0;
-  border-radius: 12px;
-  width: 34px;
-  height: 34px;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(
-    --surface-subtle-bg,
-    color-mix(in srgb, var(--surface-panel-bg) 85%, transparent)
-  );
 }
 
 .search-leading .engine-badge img {
-  width: 24px !important;
-  height: 24px !important;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+  width: 20px;
+  height: 20px;
+  filter: none;
+  opacity: 1;
 }
 
-body.theme-light .search-leading .engine-badge img {
-  filter: none;
+body:not(.theme-light) .search-leading .engine-badge img {
+  filter: brightness(0) invert(1);
+  opacity: 0.54;
 }
 
 .search-bar input[type="text"] {
   flex: 1;
-  padding: 16px 6px 16px 4px;
+  padding: 0 8px;
   background: transparent;
   border: none;
   outline: none;
   font-size: 16px;
-  font-weight: 500;
-  letter-spacing: 0.25px;
-  color: var(--text-color);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: rgba(0, 0, 0, 0.87);
+  font-family: arial, sans-serif;
 }
 
-body.theme-light .search-bar input[type="text"] {
-  color: var(--color-text-primary);
+.search-bar input[type="text"]::placeholder {
+  color: rgba(0, 0, 0, 0.54);
+}
+
+body:not(.theme-light) .search-bar input[type="text"] {
+  color: rgba(255, 255, 255, 0.87);
+}
+
+body:not(.theme-light) .search-bar input[type="text"]::placeholder {
+  color: rgba(255, 255, 255, 0.54);
 }
 
 /* Global button styles */
@@ -240,88 +269,55 @@ body.theme-light .search-bar input[type="text"] {
     ),
     #d93025;
 }
-/* Button variable overrides now handled via themes.css */
-
-/* Search bar submit inherits nt-btn */
+/* Search bar submit button */
 .search-bar .search-submit {
-  --btn-bg: var(--primary-color);
-  --btn-border: var(--primary-color);
-  --btn-color: #fff;
-  font-size: 15px;
-  padding: 0 28px;
-  border-radius: 0;
-  height: auto;
+  background: transparent;
+  border: none;
+  padding: 0 14px 0 8px;
+  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(
-    135deg,
-    var(--primary-color),
-    color-mix(in srgb, var(--primary-color) 70%, black)
-  );
-  border: none;
-  box-shadow: -1px 0 0 var(--search-button-separator) inset;
-  transition: box-shadow 0.25s ease, filter 0.25s ease;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.15s ease;
+  color: rgba(95, 99, 104, 1);
+  height: 44px;
+  min-width: 44px;
 }
 
-/* Improve contrast / separation in light theme so button is clearly distinct */
-body.theme-light .search-bar .search-submit {
-  box-shadow: -1px 0 0 var(--search-button-separator) inset,
-    0 0 0 1px rgba(0, 0, 0, 0.04), 0 2px 6px -1px rgba(0, 0, 0, 0.25);
-  border-left: 1px solid rgba(0, 0, 0, 0.08);
+.search-bar .search-submit span {
+  display: none; /* Hide "Search" text for cleaner look */
 }
-body.theme-light .search-bar .search-submit:hover {
-  filter: brightness(1.07);
+
+.search-bar .search-submit svg {
+  width: 20px;
+  height: 20px;
+  opacity: 0.54;
 }
-.search-bar .search-submit::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    circle at 30% 50%,
-    rgba(255, 255, 255, 0.25),
-    transparent 65%
-  );
-  opacity: 0;
-  transition: opacity 0.35s ease;
-  pointer-events: none;
-}
-.search-bar .search-submit:hover::before {
-  opacity: 1;
-}
+
 .search-bar .search-submit:hover {
-  filter: brightness(1.05);
+  background: rgba(95, 99, 104, 0.08);
 }
 
 .search-bar .search-submit:active {
-  transform: translateY(1px);
+  background: rgba(95, 99, 104, 0.12);
 }
 
-.search-bar .engine-badge {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-color);
-  font-size: 12px;
-  padding: 4px 10px;
-  border-radius: 16px;
-  margin-right: 12px;
-  align-self: center;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.search-bar .engine-badge {
-  min-width: 34px;
-  justify-content: center;
-}
-.search-bar .engine-badge img {
-  display: block;
+body:not(.theme-light) .search-bar .search-submit {
+  color: rgba(255, 255, 255, 0.87);
 }
 
-body.theme-light .search-bar .engine-badge {
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--color-text-primary);
+body:not(.theme-light) .search-bar .search-submit svg {
+  opacity: 0.54;
+  filter: brightness(0) invert(1);
+}
+
+body:not(.theme-light) .search-bar .search-submit:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body:not(.theme-light) .search-bar .search-submit:active {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* Folder grid - Flex layout: left aligned, wrapping, fixed spacing */
@@ -334,6 +330,19 @@ body.theme-light .search-bar .engine-badge {
   max-width: 1220px; /* narrower to reduce columns */
   margin: 0 auto;
   padding-bottom: 32px;
+}
+
+/* When specific column count is set, use CSS Grid with calculated width */
+.folder-grid.grid-columns-fixed {
+  display: grid;
+  grid-template-columns: repeat(var(--main-grid-columns), var(--folder-size));
+  justify-content: center;
+  gap: 40px 48px;
+  /* Calculate max-width based on: (columns × tile-size) + (columns-1 × gap) */
+  max-width: calc(
+    (var(--main-grid-columns) * var(--folder-size)) + 
+    ((var(--main-grid-columns) - 1) * 48px)
+  );
 }
 
 /* Force earlier wrapping to show fewer columns on very wide screens */

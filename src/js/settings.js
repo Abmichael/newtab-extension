@@ -84,6 +84,15 @@ class SettingsManager {
         await this.storage.saveData(updatedData);
       }
       
+      // Migration: Add mainGridColumns setting if it doesn't exist
+      if (typeof this.settings.mainGridColumns === 'undefined') {
+        this.settings.mainGridColumns = 'auto';
+        // Save the migrated settings
+        const updatedData = await this.storage.loadData();
+        updatedData.settings = this.settings;
+        await this.storage.saveData(updatedData);
+      }
+      
       await this.applySettings();
       this.initClock();
       return true;
@@ -106,7 +115,8 @@ class SettingsManager {
    */
   getDefaultSettings() {
     return {
-      gridSize: 4,
+      gridSize: 4, // Number of columns inside folder popovers
+      mainGridColumns: 'auto', // Number of columns in main grid (auto, or 3-10)
       tileSize: 120, // Default tile size in pixels (for both folders and links)
       theme: "dark",
       backgroundColor: "#1a202c",
@@ -296,8 +306,22 @@ class SettingsManager {
         body.classList.add("theme-custom");
       }
 
-      // Apply grid size
+      // Apply grid size (for folder contents)
       root.style.setProperty("--grid-size", this.settings.gridSize);
+
+      // Apply main grid columns
+      const folderGrid = document.querySelector('.folder-grid');
+      if (this.settings.mainGridColumns === 'auto') {
+        root.style.setProperty("--main-grid-columns", 'auto');
+        if (folderGrid) {
+          folderGrid.classList.remove('grid-columns-fixed');
+        }
+      } else {
+        root.style.setProperty("--main-grid-columns", this.settings.mainGridColumns);
+        if (folderGrid) {
+          folderGrid.classList.add('grid-columns-fixed');
+        }
+      }
 
       // Apply tile size
       root.style.setProperty("--folder-size", `${this.settings.tileSize}px`);
@@ -333,6 +357,7 @@ class SettingsManager {
   validateSetting(key, value) {
     const validations = {
       gridSize: (v) => Number.isInteger(v) && v >= 3 && v <= 8,
+      mainGridColumns: (v) => v === 'auto' || (Number.isInteger(v) && v >= 3 && v <= 10),
       tileSize: (v) => Number.isInteger(v) && v >= 80 && v <= 200,
       theme: (v) =>
         typeof v === "string" &&

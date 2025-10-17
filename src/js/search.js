@@ -1,8 +1,8 @@
 // newtab Search Bar Component
-(function(){
+(()=> {
   function getSettings(){
     try {
-      if(window.__newtabApp && window.__newtabApp.settingsManager){
+      if(window.__newtabApp?.settingsManager){
         return window.__newtabApp.settingsManager.getCurrentSettings();
       }
       // Fallback: attempt storage direct
@@ -52,7 +52,7 @@
                onerror="this.src='https://www.google.com/s2/favicons?domain=' + new URL('${engine.template.replace('{query}','test')}').hostname + '&sz=32';" />
         </span>
       </div>
-      <input type="text" id="newtab-search-input" placeholder="Search the web" aria-label="Search" />
+      <input type="text" id="newtab-search-input" placeholder="${engine.name}" aria-label="Search" />
       <button class="nt-btn search-submit" type="submit" aria-label="Search submit">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         <span>Search</span>
@@ -93,14 +93,14 @@
     observer.observe(container, { childList: true, subtree: true });
 
     // Expose refresh method
-    window.__newtabSearchRefresh = function(){
+    window.__newtabSearchRefresh = ()=> {
       console.log('Search: Refreshing with current settings');
       buildForm(getSettings());
     };
 
     // Wait for app initialization and refresh with actual settings
     const checkAndRefresh = () => {
-      if(window.__newtabApp && window.__newtabApp.settingsManager && window.__newtabApp.settingsManager.settings) {
+      if(window.__newtabApp?.settingsManager?.settings) {
         // App is fully initialized, refresh search bar with actual settings
         console.log('Search: App initialized, refreshing with loaded settings');
         window.__newtabSearchRefresh();
