@@ -34,6 +34,7 @@ cat $SRC_DIR/js/performance.js \
     $SRC_DIR/js/search.js \
     $SRC_DIR/js/folders.js \
     $SRC_DIR/js/settings.js \
+    $SRC_DIR/js/weather.js \
     $SRC_DIR/js/ui/ComponentManager.js \
     $SRC_DIR/js/ui/RenderManager.js \
     $SRC_DIR/js/ui/DialogManager.js \
@@ -64,7 +65,7 @@ cat > $BUILD_DIR/index.html << 'EOF'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>new tab</title>
+    <title>New Tab</title>
     <!-- Prevent theme flash: hide UI until settings apply -->
     <style>body.preload{display:none;}</style>
     <link rel="stylesheet" href="css/styles.min.css">
@@ -72,7 +73,7 @@ cat > $BUILD_DIR/index.html << 'EOF'
 <body class="preload">
     <div id="app">
         <header class="header">
-                <div class="clock" id="clock"></div>
+                <div class="weather" id="weather">🌤️ Loading...</div>
             <div class="header-actions">
                 <button class="settings-btn" id="settings-button">
                     <span>⚙️</span>

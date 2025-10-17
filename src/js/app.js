@@ -4,6 +4,7 @@ class newtabApp {
     this.storageManager = new StorageManager();
     this.folderSystem = new FolderSystem(this.storageManager);
     this.settingsManager = new SettingsManager(this.storageManager);
+    this.weatherManager = new WeatherManager();
     this.data = null;
     this.ui = null;
     this.init();
@@ -26,7 +27,8 @@ class newtabApp {
       window.__newtabSearchRefresh();
     }
 
-    this.updateClock();
+    // Initialize weather display
+    this.weatherManager.init();
     this.setupEventListeners();
 
     // Seed from topSites on first launch if empty, then periodic refresh
@@ -72,9 +74,6 @@ class newtabApp {
     setTimeout(() => {
       try { document.body.classList.remove("preload"); } catch (_) {}
     }, 1500);
-
-    // Update clock every second (the settings manager also has its own clock)
-    setInterval(() => this.updateClock(), 1000);
   }
 
   async initializeData() {
@@ -92,19 +91,6 @@ class newtabApp {
       }
       // Use default data if loading fails
       this.data = this.storageManager.defaultData;
-    }
-  }
-
-  updateClock() {
-    const clockElement = document.getElementById("clock");
-    if (clockElement) {
-      const now = new Date();
-      const hour12 = (this?.data?.settings?.clockFormat || "12h") === "12h";
-      const opts = { hour: "2-digit", minute: "2-digit", hour12 };
-      let timeString = now.toLocaleTimeString([], opts);
-      // Ensure lowercase am/pm if present
-      timeString = timeString.replace(/AM|PM/, (m) => m.toLowerCase());
-      clockElement.textContent = timeString;
     }
   }
 

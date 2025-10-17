@@ -7,7 +7,7 @@
       name="description"
       content="newtab - Custom new tab page with Android-style folders"
     />
-    <title>new tab</title>
+    <title>New Tab</title>
     <!-- Prevent theme flash: hide UI until settings apply -->
     <style>
       /* Keep this tiny and inline so it applies immediately */
@@ -22,7 +22,7 @@
   <body class="preload">
     <div id="app">
       <header class="header">
-        <div class="clock" id="clock"></div>
+        <div class="weather" id="weather">🌤️ Loading...</div>
         <div class="header-actions">
           <button class="settings-btn" id="settings-button">
             <span>⚙️</span>
@@ -53,6 +53,7 @@
     <script src="src/js/storage.js"></script>
     <script src="src/js/folders.js"></script>
     <script src="src/js/settings.js"></script>
+    <script src="src/js/weather.js"></script>
 
     <!-- UI Module Components (loaded in dependency order) -->
     <!-- Base component manager -->

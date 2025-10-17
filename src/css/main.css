@@ -71,13 +71,19 @@ body.theme-light .clock-widget {
   gap: 20px;
 }
 
-.clock {
+.weather {
   font-size: 18px;
   color: var(--text-color);
   opacity: 0.95;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   font-family: "SF Mono", Monaco, monospace;
   font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.weather:hover {
+  opacity: 1;
 }
 
 /* Main content */
