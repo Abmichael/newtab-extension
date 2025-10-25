@@ -154,10 +154,9 @@ class PopoverManager extends ComponentManager {
     // Replace node
     pop.replaceChild(input, titleEl);
     
-    // Focus and place caret at end (no selection highlight for invisible input)
+    // Focus and select all text
     input.focus();
-    const v = input.value;
-    input.setSelectionRange(v.length, v.length);
+    input.select();
 
     let done = false;
     const commit = async () => {
@@ -228,8 +227,10 @@ class PopoverManager extends ComponentManager {
       : clickPoint?.y ?? window.innerHeight / 2;
     const viewportW = window.innerWidth;
     const viewportH = window.innerHeight;
-    const popW = 420;
-    const popH = 420;
+    
+    // Get actual popover dimensions after rendering
+    const popW = pop.offsetWidth || 420;
+    const popH = pop.offsetHeight || 420;
 
     // Initial top-left so that the popover center sits at the click point
     let x = Math.round(cx - popW / 2);

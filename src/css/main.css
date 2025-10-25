@@ -324,8 +324,7 @@ body:not(.theme-light) .search-bar .search-submit:active {
 .folder-grid {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 40px 48px; /* wider vertical rhythm, fewer columns visually */
+  gap: 32px; /* consistent spacing between rows and columns */
   width: 100%;
   max-width: 1220px; /* narrower to reduce columns */
   margin: 0 auto;
@@ -337,11 +336,11 @@ body:not(.theme-light) .search-bar .search-submit:active {
   display: grid;
   grid-template-columns: repeat(var(--main-grid-columns), var(--folder-size));
   justify-content: center;
-  gap: 40px 48px;
+  gap: 32px;
   /* Calculate max-width based on: (columns × tile-size) + (columns-1 × gap) */
   max-width: calc(
     (var(--main-grid-columns) * var(--folder-size)) + 
-    ((var(--main-grid-columns) - 1) * 48px)
+    ((var(--main-grid-columns) - 1) * 32px)
   );
 }
 
@@ -355,7 +354,7 @@ body:not(.theme-light) .search-bar .search-submit:active {
 /* Slightly tighter on small desktops */
 @media (max-width: 1199px) {
   .folder-grid {
-    gap: 32px 36px;
+    gap: 24px;
   }
 }
 

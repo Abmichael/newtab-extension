@@ -177,13 +177,20 @@ body.theme-light .folder-overlay {
 .folder-popover {
 	position: absolute;
 	z-index: 3000;
-	width: 420px;
-	height: 420px;
+	/* Dynamic width based on actual content, respecting max columns from settings */
+	width: fit-content;
+	min-width: 300px;
+	box-sizing: border-box; /* ensure border is included in width calculations */
+	/* Max width = (max-columns × tile-size) + ((max-columns - 1) × gap) + horizontal padding */
+	/* Note: gap between items does not apply after the last item in a row */
+	max-width: min(90vw, calc((var(--grid-size) * var(--folder-size)) + ((var(--grid-size) - 1) * 32px) + 60px + 2px)); /* +2px epsilon for rounding/scrollbar quirks */
+	height: auto;
+	max-height: 80vh;
 	background: var(--surface-popover-bg);
 	color: var(--color-text-primary);
 	border: 1px solid var(--surface-panel-border);
-	border-radius: 12px;
-	box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+	border-radius: 16px;
+	box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
 	backdrop-filter: blur(6px);
 	transform-origin: center center;
 	opacity: 0;
@@ -204,12 +211,26 @@ body.theme-light .folder-overlay {
 }
 
 .folder-popover .site-grid {
-	padding: 12px 14px 14px 14px;
-	overflow: hidden;
+	padding: 30px;
+	overflow-y: auto;
 	flex: 1 1 auto;
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(var(--folder-size), 1fr));
-	gap: 12px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 32px;
+	align-content: flex-start;
+	/* Avoid adding extra distributed space on each row; rely solely on gap spacing */
+	justify-content: flex-start;
+}
+
+/* In popover, prevent label from extending tile width which can cause unintended wrapping */
+.folder-popover .site-grid .link-title {
+	width: var(--folder-size);
+	max-width: var(--folder-size);
+}
+
+/* Lock item basis to exact tile width in flex layout to avoid rounding-based wraps */
+.folder-popover .site-grid .link-item {
+	flex: 0 0 var(--folder-size);
 }
 
 .folder-popover .site-grid .popover-empty {
@@ -224,25 +245,36 @@ body.theme-light .folder-overlay {
 }
 
 .folder-popover .popover-title {
-	padding: 10px 14px 14px 14px;
+	padding: 16px 24px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	text-align: center;
-	font-size: 14px;
+	font-size: 15px;
 	font-weight: 600;
 	color: var(--text-color);
+	cursor: text;
+	user-select: text;
+	border-radius: 8px;
+	transition: background 0.15s ease;
+}
+
+.folder-popover .popover-title:hover {
+	background: color-mix(in srgb, var(--primary-color) 8%, transparent);
 }
 
 .folder-popover .popover-title-input {
 	width: 100%;
 	text-align: center;
-	font-size: 14px;
+	font-size: 15px;
 	font-weight: 600;
 	color: var(--text-color);
-	padding: 10px 14px 14px 14px; /* match .popover-title spacing */
+	padding: 16px 24px; /* match .popover-title spacing */
 	border: none;
-	border-radius: 0;
-	background: transparent;
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--primary-color) 12%, transparent);
 	outline: none;
-	box-shadow: none;
+	box-shadow: 0 0 0 2px color-mix(in srgb, var(--primary-color) 40%, transparent);
 	appearance: none;
 	-webkit-appearance: none;
 	caret-color: currentColor;
@@ -250,15 +282,18 @@ body.theme-light .folder-overlay {
 
 .folder-popover .popover-title-input:focus {
 	outline: none;
-	box-shadow: none;
+	box-shadow: 0 0 0 2px var(--primary-color);
+	background: color-mix(in srgb, var(--primary-color) 16%, transparent);
 }
 
-/* Make text selection invisible to emphasize caret-only editing */
+/* Make text selection visible with theme color */
 .folder-popover .popover-title-input::selection {
-	background: transparent;
+	background: var(--primary-color);
+	color: #fff;
 }
 .folder-popover .popover-title-input::-moz-selection {
-	background: transparent;
+	background: var(--primary-color);
+	color: #fff;
 }
 
 @keyframes folderPopoverIn {
