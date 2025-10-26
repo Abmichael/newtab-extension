@@ -105,9 +105,6 @@ class RenderManager extends ComponentManager {
 
     const button = document.createElement("div");
     button.className = "folder-button";
-    if (folder.color) {
-      button.style.background = this.computeFolderBg(folder.color);
-    }
 
     const preview = this.createFolderPreview(folder.sites || []);
     // Move preview slots into the button without appending the temporary wrapper
@@ -230,11 +227,6 @@ class RenderManager extends ComponentManager {
    * @param {string} color - The folder color
    * @returns {string} The computed background style
    */
-  computeFolderBg(color) {
-    // Simple implementation - could be enhanced with gradients
-    return color;
-  }
-
   // ============ Adaptive Backgrounds ============
 
   /**

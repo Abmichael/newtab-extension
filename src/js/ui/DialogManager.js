@@ -19,12 +19,6 @@ class DialogManager extends ComponentManager {
         <label for="folder-name">Folder Name:</label>
         <input type="text" id="folder-name" value="${folder.name}" />
       </div>
-      <div class="dialog-field">
-        <label for="folder-color">Color:</label>
-        <input type="color" id="folder-color" value="${
-					folder.color || "#4285f4"
-				}" />
-      </div>
     `,
 			[
 				{ text: "Cancel", action: "cancel" },
@@ -35,11 +29,10 @@ class DialogManager extends ComponentManager {
 		dialog.addEventListener("action", (e) => {
 			if (e.detail.action === "save") {
 				const name = dialog.querySelector("#folder-name").value.trim();
-				const color = dialog.querySelector("#folder-color").value;
 
 				if (name) {
 					try {
-						this.folderSystem.updateFolder(folderId, { name, color });
+						this.folderSystem.updateFolder(folderId, { name });
 						this.emit("foldersChanged");
 						console.log(`Folder updated successfully`);
 					} catch (error) {
@@ -264,6 +257,52 @@ class DialogManager extends ComponentManager {
 		});
 	}
 
+	showEditLinkDialog(linkId) {
+		const link = this.folderSystem.getAllLinks?.().find((l) => l.id === linkId);
+		if (!link) return;
+
+		const dialog = this.createDialog(
+			"Edit Link",
+			`
+      <div class="dialog-field">
+        <label for="link-name">Title:</label>
+        <input type="text" id="link-name" value="${link.name || ""}" />
+      </div>
+      <div class="dialog-field">
+        <label for="link-url">URL:</label>
+        <input type="url" id="link-url" value="${link.url || ""}" />
+      </div>
+    `,
+			[
+				{ text: "Cancel", action: "cancel" },
+				{ text: "Save", action: "save", primary: true },
+			],
+		);
+
+		dialog.addEventListener("action", async (e) => {
+			if (e.detail.action === "save") {
+				const name = dialog.querySelector("#link-name").value.trim();
+				const url = dialog.querySelector("#link-url").value.trim();
+
+				if (name && url) {
+					try {
+						await this.folderSystem.updateRootLink(linkId, { name, url });
+						this.emit("foldersChanged");
+						console.log(`Link updated successfully`);
+					} catch (error) {
+						console.error("Error updating link:", error);
+						alert("Failed to update link. Please check the URL and try again.");
+						return;
+					}
+				} else {
+					alert("Please enter both title and URL.");
+					return;
+				}
+			}
+			this.closeDialog();
+		});
+	}
+
 	showDeleteLinkDialog(linkId) {
 		// Find link by ID among root links
 		const link = this.folderSystem.getAllLinks?.().find((l) => l.id === linkId);
@@ -312,6 +351,56 @@ class DialogManager extends ComponentManager {
 			}
 			this.closeDialog();
 		});
+	}
+
+	showEditSiteDialog(folderId, siteId) {
+		try {
+			const { folder, site } = this.folderSystem.getSiteById(folderId, siteId);
+			if (!folder || !site) return;
+
+			const dialog = this.createDialog(
+				"Edit Site",
+				`
+        <div class="dialog-field">
+          <label for="site-name">Site Name:</label>
+          <input type="text" id="site-name" value="${site.name || ""}" />
+        </div>
+        <div class="dialog-field">
+          <label for="site-url">URL:</label>
+          <input type="url" id="site-url" value="${site.url || ""}" />
+        </div>
+      `,
+				[
+					{ text: "Cancel", action: "cancel" },
+					{ text: "Save", action: "save", primary: true },
+				],
+			);
+
+			dialog.addEventListener("action", async (e) => {
+				if (e.detail.action === "save") {
+					const name = dialog.querySelector("#site-name").value.trim();
+					const url = dialog.querySelector("#site-url").value.trim();
+
+					if (name && url) {
+						try {
+							await this.folderSystem.updateSite(folderId, siteId, { name, url });
+							this.emit("foldersChanged");
+							console.log(`Site updated successfully`);
+						} catch (error) {
+							console.error("Error updating site:", error);
+							alert("Failed to update site. Please check the URL and try again.");
+							return;
+						}
+					} else {
+						alert("Please enter both site name and URL.");
+						return;
+					}
+				}
+				this.closeDialog();
+			});
+		} catch (err) {
+			console.error("Error preparing edit site dialog:", err);
+		}
 	}
 
 	showDeleteSiteDialog(folderId, siteId) {

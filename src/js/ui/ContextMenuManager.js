@@ -54,12 +54,18 @@ class ContextMenuManager extends ComponentManager {
         <div class="context-item" data-action="open-site">
           <span>Open</span>
         </div>
+        <div class="context-item" data-action="edit-site">
+          <span>Edit Site</span>
+        </div>
         <div class="context-item" data-action="delete-site">
           <span>Delete Site</span>
         </div>
       `;
     } else if (linkItem) {
       menu.innerHTML = `
+        <div class="context-item" data-action="edit-link">
+          <span>Edit Link</span>
+        </div>
         <div class="context-item" data-action="move-link">
           <span>Move to folder…</span>
         </div>
@@ -208,6 +214,9 @@ class ContextMenuManager extends ComponentManager {
         case "add-site":
           if (folderId) this.dialogManager.showAddSiteDialog(folderId);
           break;
+        case "edit-link":
+          if (linkId) this.dialogManager.showEditLinkDialog(linkId);
+          break;
         case "move-link":
           if (linkId) this.dialogManager.showMoveLinkDialog(linkId);
           break;
@@ -229,6 +238,11 @@ class ContextMenuManager extends ComponentManager {
             } catch (err) {
               console.error('Failed to open site from context menu', err);
             }
+          }
+          break;
+        case "edit-site":
+          if (siteFolderId && siteId && this.dialogManager?.showEditSiteDialog) {
+            this.dialogManager.showEditSiteDialog(siteFolderId, siteId);
           }
           break;
         case "delete-site":
