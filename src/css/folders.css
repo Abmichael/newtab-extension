@@ -68,22 +68,13 @@
 	justify-content: center;
 	overflow: hidden;
 	position: relative;
-	transition:
-		background 0.25s ease,
-		box-shadow 0.25s ease,
-		transform 0.25s ease;
 }
 
 body.theme-light .folder-preview-icon {
 	background: var(--tile-preview-bg);
 }
 
-.folder-button:hover .folder-preview-icon {
-	box-shadow:
-		0 0 0 2px color-mix(in srgb, var(--primary-color) 55%, transparent),
-		0 2px 6px rgba(0, 0, 0, 0.25);
-	transform: translateY(-2px);
-}
+/* Removed complex hover effect on preview icons to prevent visual glitches */
 
 .folder-preview-icon img {
 	width: 22px;
