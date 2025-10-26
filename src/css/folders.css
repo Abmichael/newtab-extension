@@ -77,8 +77,10 @@ body.theme-light .folder-preview-icon {
 /* Removed complex hover effect on preview icons to prevent visual glitches */
 
 .folder-preview-icon img {
-	width: 22px;
-	height: 22px;
+	width: min(35px, calc(var(--folder-size, 120px) * 0.25));
+	height: min(35px, calc(var(--folder-size, 120px) * 0.25));
+	min-width: 14px;
+	min-height: 14px;
 }
 
 /* Blue hover effect on folder preview icons disabled per user request */
@@ -369,7 +371,29 @@ body.theme-light .folder-overlay {
 	transition: background 0.15s ease;
 	display: flex;
 	align-items: center;
+	gap: 10px;
 	position: relative;
+}
+
+.context-icon {
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	opacity: 0.7;
+	transition: opacity 0.15s ease;
+}
+
+.context-item:hover .context-icon {
+	opacity: 1;
+}
+
+.context-item[style*="pointer-events: none"] {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.context-item[style*="pointer-events: none"] .context-icon {
+	opacity: 0.3;
 }
 
 .context-item:hover {
@@ -652,8 +676,8 @@ body.theme-light .folder-overlay {
 }
 
 .link-button img {
-	width: 80%;
-	height: 80%;
+	width: min(80%, max(24px, calc(var(--folder-size, 120px) * 0.5)));
+	height: min(80%, max(24px, calc(var(--folder-size, 120px) * 0.5)));
 	object-fit: contain;
 	image-rendering: auto;
 	transition: all 0.2s ease;
@@ -661,8 +685,8 @@ body.theme-light .folder-overlay {
 
 /* Adaptive background styling - colors set via JavaScript */
 .link-button.adaptive-bg img {
-	width: 32px !important;
-	height: 32px !important;
+	width: max(32px, calc(var(--folder-size, 120px) * 0.4)) !important;
+	height: max(32px, calc(var(--folder-size, 120px) * 0.4)) !important;
 }
 
 /* Loading state while upgrading icons */

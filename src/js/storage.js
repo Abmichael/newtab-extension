@@ -12,15 +12,15 @@ class StorageManager {
 				topSitesBlacklist: [], // URLs user doesn't want auto-populated from top sites
 			},
 			settings: {
-				gridSize: 4,
-				theme: "dark",
+				gridSize: 3,
+				theme: "auto",
 				backgroundColor: "#1a202c",
 				textColor: "#e2e8f0",
 				primaryColor: "#63b3ed",
 				backgroundGradient: "linear-gradient(135deg, #2d3748 0%, #4a5568 100%)",
 				showClock: false,
 				clockFormat: "12h",
-				clockPosition: "bottom-right",
+				clockPosition: "bottom-left",
 				showSeconds: false,
 				clockFreePosition: null, // { xPercent: number, yPercent: number }
 				customTheme: false,
@@ -29,8 +29,8 @@ class StorageManager {
 					reducedMotion: false,
 				},
 				searchEngine: {
-					name: "DuckDuckGo",
-					template: "https://duckduckgo.com/?q={query}",
+					name: "Google",
+					template: "https://www.google.com/search?q={query}",
 				},
 				autoSortByPopularity: false,
 			},

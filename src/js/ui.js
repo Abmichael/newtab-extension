@@ -65,9 +65,37 @@ class UIManager {
       this.currentContextMenu = null;
     });
 
+    // Context menu notifications
+    this.contextMenuManager.on('notification', (data) => {
+      const { message, type, duration } = data;
+      this.notificationManager.show(message, type || 'success', duration);
+    });
+
+    // Context menu item moved
+    this.contextMenuManager.on('itemMoved', () => {
+      this.refreshFolders();
+    });
+
+    // Context menu folder created
+    this.contextMenuManager.on('folderCreated', () => {
+      this.refreshFolders();
+    });
+
     // Popover coordination
     this.popoverManager.on('popoverClosed', () => {
       this.currentPopover = null;
+    });
+
+    // Popover folder renamed - update grid immediately
+    this.popoverManager.on('folderRenamed', (data) => {
+      // Update the folder title in the main grid without full refresh
+      const folderEl = this.container.querySelector(`.folder-item[data-folder-id="${data.folderId}"]`);
+      if (folderEl) {
+        const titleEl = folderEl.querySelector('.folder-title');
+        if (titleEl) {
+          titleEl.textContent = data.newName;
+        }
+      }
     });
 
     // Dialog coordination

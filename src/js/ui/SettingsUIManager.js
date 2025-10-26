@@ -93,8 +93,8 @@ class SettingsUIManager extends ComponentManager {
                 <label class="setting-label">Tile Size</label>
                 <div class="setting-description">Size of folder and link tiles</div>
                 <div class="setting-range">
-                  <input type="range" class="setting-slider" id="tile-size" min="80" max="160" value="120">
-                  <span class="range-value" id="tile-size-value">120px</span>
+                  <input type="range" class="setting-slider" id="tile-size" min="60" max="160" value="80">
+                  <span class="range-value" id="tile-size-value">80px</span>
                 </div>
               </div>
               <div class="setting-group">

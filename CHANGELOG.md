@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-10-26
+
+### Added
+- **Manual Ordering via Context Menu**: Reorder folders and links using right-click menu
+  - Move Up/Down (swap with adjacent item)
+  - Move to Top/Bottom (jump to first/last position)
+  - Smart boundary detection (disabled arrows when at edges)
+  - Type-aware ordering (folders separate from links)
+  - Auto-sort disabled automatically on manual reorder
+  - Inline SVG icons for professional appearance
+
+### Changed
+- **Context Menu Icons**: Replaced emoji icons with monochrome SVG icons
+  - Professional Feather Icons style (stroke-based)
+  - Inline SVG for offline support (no CDN dependencies)
+  - Theme-aware with `currentColor` inheritance
+  - 16x16px size with smooth hover transitions
+  - See `docs/CONTEXT_MENU_ICONS.md` for icon reference
+- **Default Settings**: Updated for better out-of-box experience
+  - Main grid columns: Auto-fit (responsive)
+  - Folder grid columns: 3 (cleaner folder layout)
+  - Tile size: 80px (more compact, min 60px)
+  - Clock position: Bottom-left
+  - Search engine: Google
+  - Theme: Auto (follows system preference)
+
 ## [1.1.0] - 2025-10-26
 
 ### Added
@@ -18,7 +44,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Defaults to OFF to avoid surprising existing users
   - Folders are always exempt and appear first in original order
   - Click tracking across all navigation points (root links, folder sites, context menu)
-  - See `docs/POPULARITY_TRACKING.md` for complete documentation
 
 - **Top Sites Smart Loading Improvements**:
   - Normalized hostname detection (ignores `www.` subdomain to prevent duplicates)
@@ -27,7 +52,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - User-controlled blacklist for unwanted top sites suggestions
   - Link tracking metadata (`fromTopSites`, `addedAt` timestamps)
   - Enhanced delete dialog with "Don't suggest this site again" option
-  - See `docs/TOP_SITES_IMPROVEMENTS.md` for complete documentation
 
 - **Modular UI Architecture**: Refactored UI into separate manager classes
   - `ComponentManager` - Reusable UI components (buttons, inputs, etc.)
@@ -66,12 +90,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Missing error handling in storage operations
 
 ### Documentation
-- Added `docs/POPULARITY_TRACKING.md` - Complete popularity feature documentation
-- Added `docs/IMPLEMENTATION_SUMMARY.md` - Technical implementation details
-- Added `docs/CHANGES_SUMMARY.md` - User-facing changes summary
-- Added `docs/QUICK_START_POPULARITY.md` - Quick reference guide
-- Added `docs/TOP_SITES_IMPROVEMENTS.md` - Top sites feature documentation
-- Added `docs/TOP_SITES_QUICK_REFERENCE.md` - Quick reference for top sites
 - Updated `README.md` - Reflected new features and architecture
 - Updated `shrimp-rules.md` - Added changelog maintenance guidelines
 
