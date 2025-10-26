@@ -816,6 +816,126 @@ class FolderSystem {
 		}
 	}
 
+	// =============== Popularity Tracking ======================
+
+	/**
+	 * Initialize popularity metadata for an item (link or site)
+	 * @param {Object} item - link or site object
+	 */
+	initializePopularity(item) {
+		if (!item.popularity) {
+			item.popularity = {
+				clicks: 0,
+				lastClicked: null,
+				createdAt: Date.now(),
+			};
+		}
+	}
+
+	/**
+	 * Record a click for a link or site
+	 * @param {string} itemId - ID of the link or site
+	 * @param {string|null} folderId - ID of folder if tracking a site, null for root link
+	 */
+	async recordClick(itemId, folderId = null) {
+		let item;
+		
+		if (folderId) {
+			// Track site within folder
+			const result = this.getSiteById(folderId, itemId);
+			if (!result.site) return;
+			item = result.site;
+		} else {
+			// Track root link
+			item = this.links.find((l) => l.id === itemId);
+			if (!item) return;
+		}
+
+		this.initializePopularity(item);
+		item.popularity.clicks++;
+		item.popularity.lastClicked = Date.now();
+
+		await this.save();
+		
+		// Note: Sorting happens on next page load, not immediately
+		// This avoids disorienting reordering while user is browsing
+	}
+
+	/**
+	 * Calculate a popularity score for an item based on clicks and recency
+	 * Higher score = more popular
+	 * @param {Object} item - link or site object
+	 * @returns {number} popularity score
+	 */
+	calculatePopularityScore(item) {
+		if (!item.popularity) return 0;
+
+		const clicks = item.popularity.clicks || 0;
+		const lastClicked = item.popularity.lastClicked || 0;
+		const createdAt = item.popularity.createdAt || Date.now();
+
+		// Time-based decay: clicks from recent periods are worth more
+		const now = Date.now();
+		const daysSinceLastClick = lastClicked 
+			? (now - lastClicked) / (1000 * 60 * 60 * 24)
+			: 365; // If never clicked, treat as a year ago
+
+		// Decay factor: reduce value of old clicks
+		// 1.0 = clicked today, ~0.5 = clicked 30 days ago, ~0.1 = clicked 90 days ago
+		const decayFactor = Math.exp(-daysSinceLastClick / 45);
+
+		// Base score from clicks with time decay
+		const clickScore = clicks * decayFactor;
+
+		// Bonus for items created recently (helps new items compete)
+		const daysSinceCreation = (now - createdAt) / (1000 * 60 * 60 * 24);
+		const newItemBonus = daysSinceCreation < 7 ? 0.5 : 0;
+
+		return clickScore + newItemBonus;
+	}
+
+	/**
+	 * Sort root items by popularity if enabled in settings
+	 * Only sorts links; folders always appear first in their original order
+	 * @returns {boolean} whether sorting was applied
+	 */
+	async sortByPopularity() {
+		const settings = this.data.settings || {};
+		if (!settings.autoSortByPopularity) return false;
+
+		// Initialize popularity for all items
+		this.links.forEach(link => this.initializePopularity(link));
+		this.folders.forEach(folder => {
+			folder.sites?.forEach(site => this.initializePopularity(site));
+		});
+
+		// Separate folders and links from rootOrder
+		const folderEntries = this.rootOrder.filter(e => e.type === 'folder');
+		const linkEntries = this.rootOrder.filter(e => e.type === 'link');
+
+		// Create a map of link scores
+		const scoreMap = new Map();
+		linkEntries.forEach(entry => {
+			const link = this.links.find(l => l.id === entry.id);
+			if (link) {
+				scoreMap.set(entry, this.calculatePopularityScore(link));
+			}
+		});
+
+		// Sort only links by popularity score (descending)
+		linkEntries.sort((a, b) => {
+			const scoreA = scoreMap.get(a) || 0;
+			const scoreB = scoreMap.get(b) || 0;
+			return scoreB - scoreA;
+		});
+
+		// Reconstruct rootOrder: folders first (in original order), then sorted links
+		this.rootOrder = [...folderEntries, ...linkEntries];
+
+		await this.save();
+		return true;
+	}
+
 	// =============== Helpers ======================
 
 	getFolderById(id) {

@@ -97,6 +97,13 @@ class SettingsUIManager extends ComponentManager {
                   <span class="range-value" id="tile-size-value">120px</span>
                 </div>
               </div>
+              <div class="setting-group">
+                <label class="setting-checkbox">
+                  <input type="checkbox" id="auto-sort-by-popularity">
+                  <span>Auto-sort by popularity</span>
+                </label>
+                <div class="setting-description">Automatically reorder tiles based on how often you click them</div>
+              </div>
             </div>
             
             <div class="settings-section" data-section="clock">
@@ -361,6 +368,7 @@ class SettingsUIManager extends ComponentManager {
   modal.querySelector("#grid-columns-value").textContent = settings.gridSize || settings.gridColumns || 5;
     modal.querySelector("#tile-size").value = settings.tileSize || 120;
     modal.querySelector("#tile-size-value").textContent = `${settings.tileSize || 120}px`;
+    modal.querySelector("#auto-sort-by-popularity").checked = settings.autoSortByPopularity || false;
 
     // Clock settings
   modal.querySelector("#show-clock").checked = settings.showClock !== false;
@@ -593,6 +601,7 @@ class SettingsUIManager extends ComponentManager {
   newSettings.mainGridColumns = mainGridSelect === 'auto' ? 'auto' : parseInt(mainGridSelect);
   newSettings.gridSize = parseInt(modal.querySelector("#grid-columns").value);
       newSettings.tileSize = parseInt(modal.querySelector("#tile-size").value);
+      newSettings.autoSortByPopularity = modal.querySelector("#auto-sort-by-popularity").checked;
 
       // Clock settings
       newSettings.showClock = modal.querySelector("#show-clock").checked;

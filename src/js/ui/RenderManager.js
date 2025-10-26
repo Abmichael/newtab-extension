@@ -187,6 +187,10 @@ class RenderManager extends ComponentManager {
     // same-tab navigation
     button.addEventListener('click', (e) => {
       e.preventDefault();
+      // Track click for popularity
+      this.folderSystem.recordClick(link.id, null).catch(err => {
+        console.warn('Failed to record click:', err);
+      });
       try { 
         window.location.href = link.url; 
       } catch { 

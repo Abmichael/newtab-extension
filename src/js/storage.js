@@ -32,6 +32,7 @@ class StorageManager {
 					name: "DuckDuckGo",
 					template: "https://duckduckgo.com/?q={query}",
 				},
+				autoSortByPopularity: false,
 			},
 			version: "1.0",
 		};

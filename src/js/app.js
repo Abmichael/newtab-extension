@@ -61,6 +61,11 @@ class newtabApp {
     const grid = document.getElementById("folder-grid");
     const overlay = document.getElementById("folder-overlay");
     if (grid && overlay) {
+      // Apply initial popularity sorting if enabled
+      if (this.data.settings?.autoSortByPopularity) {
+        await this.folderSystem.sortByPopularity();
+      }
+      
       this.ui = new UIManager(grid, overlay, this.folderSystem);
       this.ui.renderGrid(this.data.folders, this.data.links || []);
     }
@@ -138,8 +143,10 @@ class newtabApp {
   /**
    * Refresh the grid display with current data
    */
-  refreshGrid() {
+  async refreshGrid() {
     if (this.ui && this.folderSystem) {
+      // Note: Sorting happens only on page load, not during manual refreshes
+      // This avoids disorienting reordering while user is interacting
       const folders = this.folderSystem.getAllFolders?.() || [];
       const links = this.folderSystem.getAllLinks?.() || [];
       this.ui.renderGrid(folders, links);

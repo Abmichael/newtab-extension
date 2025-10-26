@@ -233,6 +233,10 @@ class ContextMenuManager extends ComponentManager {
             try {
               const { site } = this.folderSystem.getSiteById(siteFolderId, siteId);
               if (site?.url) {
+                // Track click for popularity
+                this.folderSystem.recordClick(siteId, siteFolderId).catch(err => {
+                  console.warn('Failed to record click:', err);
+                });
                 window.location.href = site.url;
               }
             } catch (err) {

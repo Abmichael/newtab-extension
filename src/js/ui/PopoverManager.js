@@ -96,6 +96,10 @@ class PopoverManager extends ComponentManager {
     // same-tab navigation from popover tiles
     button.addEventListener('click', (e) => {
       e.preventDefault();
+      // Track click for popularity
+      this.folderSystem.recordClick(site.id, folderId).catch(err => {
+        console.warn('Failed to record click:', err);
+      });
       this.navigateToSite(site.url);
     });
     button.setAttribute("title", site.name || site.url);

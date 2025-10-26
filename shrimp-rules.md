@@ -465,4 +465,91 @@ When requirements conflict:
 3. **User experience** takes priority over code simplicity
 4. **Manifest V3 compliance** is non-negotiable
 
+## Documentation Standards
+
+### Changelog Maintenance
+
+#### CHANGELOG.md Requirements
+The project uses [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) format with [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+#### When to Update CHANGELOG.md
+- **MUST update before committing** any feature, fix, or change
+- **MUST update during development**, not after completion
+- **MUST categorize changes** using standard sections
+- **MUST reference documentation** files when adding features
+
+#### Standard Categories
+Use these categories in order:
+1. **Added** - New features, capabilities, or files
+2. **Changed** - Modifications to existing functionality
+3. **Deprecated** - Features marked for future removal
+4. **Removed** - Deleted features or files
+5. **Fixed** - Bug fixes and corrections
+6. **Security** - Security vulnerability patches
+
+#### Entry Format Rules
+```markdown
+### Category
+- **Feature/Component Name**: Brief description (what changed)
+  - Implementation detail 1 (how it works)
+  - Implementation detail 2
+  - Configuration/usage notes (if applicable)
+  - See `docs/FEATURE.md` for complete documentation
+```
+
+#### Writing Quality Standards
+- **Start with action verbs** (Add, Fix, Update, Remove, Implement)
+- **Be specific and measurable** - include component/file names
+- **Link to documentation** - reference relevant files in `docs/`
+- **Include user impact** - explain why the change matters
+- **Keep entries concise** - 2-4 bullet points maximum per feature
+
+#### Version Management
+- **[Unreleased]** section: Work-in-progress changes
+- **Version format**: `[MAJOR.MINOR.PATCH] - YYYY-MM-DD`
+  - MAJOR: Breaking changes requiring user action
+  - MINOR: New features (backward compatible)
+  - PATCH: Bug fixes (backward compatible)
+
+#### Documentation Cross-Reference
+When adding features:
+1. **MUST create documentation** in `docs/` directory
+2. **MUST reference doc file** in changelog entry
+3. **MUST update README.md** if user-facing feature
+4. **MUST update this file** if development practice changes
+
+#### Prohibited Practices
+- **NEVER commit without updating changelog**
+- **NEVER use vague descriptions** ("improved performance", "fixed bugs")
+- **NEVER skip documentation references** for new features
+- **NEVER update changelog separately** from the actual code changes
+
+#### Quick Reference Workflow
+```bash
+# 1. Make code changes
+# 2. Create/update documentation in docs/
+# 3. Add entry to CHANGELOG.md under [Unreleased]
+# 4. Commit all together:
+git add CHANGELOG.md docs/ src/
+git commit -m "feat: descriptive commit message"
+```
+
+#### Example Good Entry
+```markdown
+### Added
+- **Popularity-Based Auto-Sorting**: Automatically reorder links by click frequency
+  - Time-weighted scoring with 45-day exponential decay
+  - Deferred sorting (applies on reload, not mid-session)
+  - Configurable via Settings > Layout tab (defaults to OFF)
+  - Folders exempt and always appear first
+  - See `docs/POPULARITY_TRACKING.md` for complete documentation
+```
+
+#### Example Bad Entry (DO NOT DO THIS)
+```markdown
+### Added
+- Added sorting feature
+```
+*Problems: No component name, no details, no documentation reference, too vague*
+
 This document serves as the definitive guide for all development decisions. Any deviation from these rules requires explicit justification and documentation.
