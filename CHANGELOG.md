@@ -7,10 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] - 2025-10-26
-
 ### Added
-- **Manual Ordering via Context Menu**: Reorder folders and links using right-click menu
   - Move Up/Down (swap with adjacent item)
   - Move to Top/Bottom (jump to first/last position)
   - Smart boundary detection (disabled arrows when at edges)
@@ -18,14 +15,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Auto-sort disabled automatically on manual reorder
   - Inline SVG icons for professional appearance
 
+- **Folder Preview Visuals**: Major improvements to folder preview icons and tile appearance
+  - Preview icons now scale with tile size and maintain minimum readable size
+  - Adaptive backgrounds applied to preview icons for consistency with main tiles
+  - Preview icon containers use proportional border-radius and never elongate vertically
+  - Gap between preview icons now scales with tile size (7px to 16px)
+  - Wrapping logic ensures 2x2 grid or 2-top/1-bottom layout adapts to item count
+  - Folder tile border is now 2px and matches theme (white for light, black for dark)
+  - Folder tile background is darker for sunken effect
+  - Shadows and borders improved for sunken, modern look
+
 ### Changed
-- **Context Menu Icons**: Replaced emoji icons with monochrome SVG icons
   - Professional Feather Icons style (stroke-based)
   - Inline SVG for offline support (no CDN dependencies)
   - Theme-aware with `currentColor` inheritance
   - 16x16px size with smooth hover transitions
   - See `docs/CONTEXT_MENU_ICONS.md` for icon reference
-- **Default Settings**: Updated for better out-of-box experience
   - Main grid columns: Auto-fit (responsive)
   - Folder grid columns: 3 (cleaner folder layout)
   - Tile size: 80px (more compact, min 60px)

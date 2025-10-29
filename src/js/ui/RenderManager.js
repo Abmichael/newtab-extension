@@ -107,10 +107,8 @@ class RenderManager extends ComponentManager {
     button.className = "folder-button";
 
     const preview = this.createFolderPreview(folder.sites || []);
-    // Move preview slots into the button without appending the temporary wrapper
-    while (preview.firstChild) {
-      button.appendChild(preview.firstChild);
-    }
+    // Append the preview container directly
+    button.appendChild(preview);
 
     const title = this.createFolderTitle(folder.name || "Folder", folder.id);
 
@@ -126,33 +124,66 @@ class RenderManager extends ComponentManager {
    * @returns {HTMLElement} The preview wrapper
    */
   createFolderPreview(sites) {
-    const wrapper = document.createElement("div");
-    // generate up to 4 preview icons
+    const container = document.createElement("div");
+    container.className = "folder-preview-container";
+    
+    // Generate up to 4 preview icons (only create as many as we have)
     const previews = (sites || []).slice(0, 4);
 
-    // Create exactly 4 slots for consistent layout
-    for (let i = 0; i < 4; i++) {
+    // Create only the icons we need (flexbox will handle layout)
+    previews.forEach((site) => {
       const slot = document.createElement("div");
       slot.className = "folder-preview-icon";
-      if (previews[i]) {
-        const img = document.createElement("img");
-        const url = previews[i].url;
-        const src = this.folderSystem.getIconSrc(previews[i]);
-        img.src = src;
-        img.loading = "lazy";
-        img.alt = previews[i].name || "Site";
-        
-        // Add error handler for favicon fallback
-        img.onerror = () => {
-          // If the extension favicon API fails, use Google's service
-          img.src = this.folderSystem.generateFallbackFaviconUrl(url);
-        };
-        
-        slot.appendChild(img);
-      }
-      wrapper.appendChild(slot);
-    }
-    return wrapper;
+      
+      const img = document.createElement("img");
+      const url = site.url;
+      const src = this.folderSystem.getIconSrc(site);
+      img.src = src;
+      img.loading = "lazy";
+      img.alt = site.name || "Site";
+      
+      // Add error handler for favicon fallback
+      img.onerror = () => {
+        // If the extension favicon API fails, use Google's service
+        img.src = this.folderSystem.generateFallbackFaviconUrl(url);
+      };
+      
+      slot.appendChild(img);
+      
+      // Apply adaptive background to preview icon (like main tiles)
+      this.applyAdaptivePreviewBackground(slot, url);
+      
+      container.appendChild(slot);
+    });
+    
+    return container;
+  }
+
+  /**
+   * Apply adaptive background to preview icon based on site URL
+   * @param {HTMLElement} slot - The preview icon slot element
+   * @param {string} siteUrl - The site URL
+   */
+  applyAdaptivePreviewBackground(slot, siteUrl) {
+    if (!slot || slot.dataset.adaptiveApplied) return;
+
+    // Generate consistent color from domain (same as main tiles)
+    const baseColor = this.generateDomainColor(siteUrl);
+    const rgbColor = this.hslToRgb(baseColor);
+
+    // Apply adaptive background with reduced opacity for preview tiles
+    slot.style.setProperty(
+      "background",
+      `linear-gradient(135deg, rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.3), rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.15))`,
+      "important"
+    );
+    slot.style.setProperty(
+      "border-color",
+      `rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.4)`,
+      "important"
+    );
+
+    slot.dataset.adaptiveApplied = "true";
   }
 
   /**

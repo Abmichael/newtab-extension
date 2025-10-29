@@ -13,18 +13,21 @@
 	width: var(--folder-size);
 	height: var(--folder-size);
 	border-radius: 22px;
-	background: var(--tile-bg);
-	border: 1px solid var(--tile-border);
+	/* Dark theme: Mix with white for lighter bg. Other themes: Mix with black for darker bg */
+	background: color-mix(in srgb, var(--tile-bg) 80%, black 20%);
+	/* Dark theme and colored themes: Use primary color variant for border */
+	border: 2px solid color-mix(in srgb, var(--primary-color) 60%, black 40%);
 	box-shadow:
 		0 4px 14px rgba(0, 0, 0, 0.28),
-		0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+		inset 0 2px 4px rgba(0, 0, 0, 0.25),
+		inset 0 -1px 2px rgba(255, 255, 255, 0.1);
 	backdrop-filter: blur(10px) saturate(140%);
 	-webkit-backdrop-filter: blur(10px) saturate(140%);
-	padding: 12px;
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	grid-template-rows: repeat(2, 1fr);
-	gap: 8px;
+	padding: 0; /* Remove padding to allow overflow clipping at edges */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: hidden; /* Clip icons at tile edges */
 	transition:
 		transform 0.18s ease,
 		box-shadow 0.18s ease,
@@ -34,6 +37,27 @@
 	-webkit-tap-highlight-color: transparent;
 	touch-action: manipulation;
 	outline: none;
+	position: relative;
+}
+
+/* Light theme variant */
+body.theme-light .folder-button {
+	/* Light theme: Mix with black for darker bg */
+	background: color-mix(in srgb, var(--tile-bg) 85%, black 10%);
+	/* Light theme: Whitish border */
+	border: 2px solid rgba(255, 255, 255, 0.9);
+	box-shadow:
+		0 4px 14px rgba(0, 0, 0, 0.15),
+		inset 0 2px 4px rgba(0, 0, 0, 0.15),
+		inset 0 -1px 2px rgba(255, 255, 255, 0.4);
+}
+
+/* Dark theme variant */
+body.theme-dark .folder-button {
+	/* Dark theme: Mix with white for lighter bg */
+	background: color-mix(in srgb, var(--tile-bg) 80%, white 10%);
+	/* Dark theme: Darkish border */
+	border: 2px solid rgb(49, 49, 49);
 }
 
 /* Light theme variant handled via tokens */
@@ -54,33 +78,84 @@
 	transform: translateY(-1px);
 }
 
+/* Removed complex hover effect on preview icons to prevent visual glitches */
+
+/* Container for preview icons - flexbox with wrapping for adaptive layout */
+.folder-button .folder-preview-container {
+	position: absolute;
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	align-content: center;
+	/* Scale gap with tile size: 7px for small tiles, up to 16px for large tiles */
+	gap: clamp(7px, calc(var(--folder-size, 120px) * 0.12), 16px);
+	/* Container is larger than tile - will be clipped by folder-button overflow:hidden */
+	width: calc(var(--folder-size, 120px) * 1.2);
+	height: calc(var(--folder-size, 120px) * 1.2);
+}
+
+/* Individual preview icon slots - mini tile representations */
 .folder-preview-icon {
-	width: 100%;
-	height: 100%;
-	border-radius: 12px;
+	flex: 0 0 auto;
+	/* Scale border radius proportionally with tile size, with reasonable bounds */
+	border-radius: clamp(8px, calc(var(--folder-size, 120px) * 0.08), 12px);
+	/* Adaptive background will be set by JavaScript */
 	background: linear-gradient(
 		135deg,
-		rgba(255, 255, 255, 0.35),
-		rgba(255, 255, 255, 0.18)
+		rgba(255, 255, 255, 0.12),
+		rgba(255, 255, 255, 0.06)
 	);
+	border: 1px solid rgba(255, 255, 255, 0.25);
+	box-shadow: 
+		0 2px 6px rgba(0, 0, 0, 0.15),
+		inset 0 1px 1px rgba(255, 255, 255, 0.15),
+		inset 0 -1px 1px rgba(0, 0, 0, 0.1);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	overflow: hidden;
 	position: relative;
+	/* CRITICAL: Use CSS variable for gap to maintain wrapping */
+	--preview-gap: clamp(7px, calc(var(--folder-size, 120px) * 0.12), 16px);
+	/* Formula: (container_width - gap) / 2 */
+	width: calc((100% - var(--preview-gap)) / 2.45);
+	height: calc((100% - var(--preview-gap)) / 2.45);
+	/* Min size prevents excessive shrinking, max allows scaling up for large tiles */
+	min-width: 32px;
+	min-height: 32px;
+	max-width: 80px;
+	max-height: 80px;
+	backdrop-filter: blur(4px);
+	-webkit-backdrop-filter: blur(4px);
 }
 
 body.theme-light .folder-preview-icon {
-	background: var(--tile-preview-bg);
+	background: linear-gradient(
+		135deg,
+		rgba(0, 0, 0, 0.04),
+		rgba(0, 0, 0, 0.02)
+	);
+	border: 1px solid rgba(0, 0, 0, 0.12);
+	box-shadow: 
+		0 2px 6px rgba(0, 0, 0, 0.1),
+		inset 0 1px 1px rgba(255, 255, 255, 0.6),
+		inset 0 -1px 1px rgba(0, 0, 0, 0.05);
 }
 
-/* Removed complex hover effect on preview icons to prevent visual glitches */
-
+/* Android launcher-style preview icons: scale with tile size, keep minimum readable size */
 .folder-preview-icon img {
-	width: min(35px, calc(var(--folder-size, 120px) * 0.25));
-	height: min(35px, calc(var(--folder-size, 120px) * 0.25));
-	min-width: 14px;
-	min-height: 14px;
+	/* Icons scale proportionally with their container */
+	width: 55%;
+	height: 55%;
+	/* Can shrink to 18px (still readable), can grow up to 44px for large tiles */
+	min-width: 18px;
+	min-height: 18px;
+	max-width: 44px;
+	max-height: 44px;
+	object-fit: contain;
+	position: relative;
+	z-index: 1;
 }
 
 /* Blue hover effect on folder preview icons disabled per user request */

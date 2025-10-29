@@ -82,14 +82,12 @@ cat > $BUILD_DIR/index.html << 'EOF'
             </div>
         </header>
         <main class="main-content">
-            <div class="main-content-inner">
                 <div class="search-bar" id="search-bar-container">
                     <!-- Search bar will be initialized here -->
                 </div>
                 <div class="folder-grid" id="folder-grid">
                     <!-- Folders and Links will be dynamically generated here -->
                 </div>
-            </div>
         </main>
         <div class="folder-overlay" id="folder-overlay">
             <!-- Folder content overlay will be generated here -->
