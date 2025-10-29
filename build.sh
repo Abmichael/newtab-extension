@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Professional newtab Build Script using Node.js minifiers
+# Professional tilio Build Script using Node.js minifiers
 # Uses terser for JS, clean-css for CSS, and html-minifier for HTML
 
 BUILD_DIR="dist"
 SRC_DIR="src"
 
-echo "🚀 Building newtab with professional minifiers..."
+echo "🚀 Building Tilio with professional minifiers..."
 
 # Clean and create build directory
 rm -rf $BUILD_DIR
@@ -65,9 +65,13 @@ cat > $BUILD_DIR/index.html << 'EOF'
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Tab</title>
+    <title>Tilio</title>
     <!-- Prevent theme flash: hide UI until settings apply -->
     <style>body.preload{display:none;}</style>
+    <!-- Preconnect and load Google Fonts (match src/index.html for consistent typography) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/styles.min.css">
 </head>
 <body class="preload">
@@ -123,8 +127,7 @@ terser $BUILD_DIR/background.js \
     --output $BUILD_DIR/background.js
 
 # Create build info
-cat > $BUILD_DIR/BUILD_INFO.md << EOF
-# newtab Production Build
+# Tilio Production Build
 
 Built on: $(date)
 Build tool: Professional Node.js minifiers

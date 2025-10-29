@@ -665,7 +665,7 @@ class SettingsUIManager extends ComponentManager {
   async exportData() {
     try {
       const data = await this.settingsManager.exportData();
-      this.downloadFile(data, "newtab-backup.json");
+      this.downloadFile(data, "tilio-backup.json");
       this.emit('notification', { message: 'Data exported successfully!', type: 'success' });
     } catch (error) {
       console.error("Export failed:", error);
@@ -765,7 +765,7 @@ class SettingsUIManager extends ComponentManager {
    * Inject or update an ephemeral <style> block for live custom theme preview only.
    */
   applyCustomThemePreview(custom) {
-    const id = 'newtab-custom-theme-preview';
+    const id = 'tilio-custom-theme-preview';
     let styleEl = document.getElementById(id);
     if (!styleEl) {
       styleEl = document.createElement('style');
@@ -778,7 +778,7 @@ class SettingsUIManager extends ComponentManager {
   }
 
   removeCustomThemePreview() {
-    const styleEl = document.getElementById('newtab-custom-theme-preview');
+    const styleEl = document.getElementById('tilio-custom-theme-preview');
     if (styleEl) styleEl.remove();
     document.body.classList.remove('theme-custom');
   }

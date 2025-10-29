@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## 1.2.0 - 2025-10-29
+
 ### Added
   - **Google Font Integration**: Added Inter font family for improved typography
   - **Hide Tile Labels Setting**: New option in Layout settings to hide text labels below folder and link tiles
@@ -42,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Search engine: Google
   - Theme: Auto (follows system preference)
 
-## [1.1.0] - 2025-10-26
+## 1.1.0 - 2025-10-26
 
 ### Added
 - **Popularity-Based Auto-Sorting**: Automatically reorder links based on click frequency and recency
@@ -95,17 +97,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Duplicate site entries when `www.` subdomain variants exist
 - Search engines appearing in top sites auto-population
-- PWA shortcuts cluttering the new tab grid
+  - PWA shortcuts cluttering the Tilio grid
 - Missing error handling in storage operations
 
 ### Documentation
 - Updated `README.md` - Reflected new features and architecture
 - Updated `shrimp-rules.md` - Added changelog maintenance guidelines
 
-## [1.0.0] - 2024-XX-XX
+## 1.0.0 - 2025-07-XX
 
 ### Added
-- Initial release of newtab Chrome extension
+- Initial release of Tilio Chrome extension
 - Android-style folder organization system
 - Drag-and-drop interface for organizing bookmarks
 - 5 preset theme options
@@ -170,7 +172,3 @@ Use these standard categories:
   - Implementation detail 2
   - See `docs/FEATURE.md` for documentation
 ```
-
-[Unreleased]: https://github.com/Abmichael/newtab-extension/compare/v1.1.0...HEAD
-[1.1.0]: https://github.com/Abmichael/newtab-extension/compare/v1.0.0...v1.1.0
-[1.0.0]: https://github.com/Abmichael/newtab-extension/releases/tag/v1.0.0

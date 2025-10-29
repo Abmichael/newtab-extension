@@ -1,4 +1,4 @@
-// newtab - Base Component Manager
+// tilio - Base Component Manager
 // Provides common patterns for all UI component managers including lifecycle management, 
 // event cleanup, and shared utilities
 

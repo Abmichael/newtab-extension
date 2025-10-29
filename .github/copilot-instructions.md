@@ -7,13 +7,13 @@ coding tasks in this repository.
 IMPORTANT: keep this file free of HTML comments for readability; this header is
 HTML-commented only to remain compatible with other tooling that may parse the
 file. The remainder of the file is plain Markdown.
--->
 
-# Copilot Instructions — newtab Chrome Extension (derived from shrimp-rules.md)
+# Copilot Instructions — Tilio Chrome Extension (derived from shrimp-rules.md)
 
 Purpose
-- Provide explicit, workspace-specific instructions for Copilot to follow when
-	assisting with the `newtab` extension. These rules are the canonical source
+	Provide explicit, workspace-specific instructions for Copilot to follow when
+	assisting with the `Tilio` extension. These rules are the canonical source
+	assisting with the `tilio` extension. These rules are the canonical source
 	for development decisions, security and performance constraints, and file
 	structure conventions.
 
@@ -25,7 +25,7 @@ High-level constraints
 - Follow Content Security Policy (no inline scripts, no eval/Function).
 
 Required manifest and permissions
-- `manifest_version: 3` and `chrome_url_overrides.newtab` to point at `index.html`.
+- `manifest_version: 3` and `chrome_url_overrides.tilio` to point at `index.html`.
 - Declare `permissions: ["storage"]` for use of `chrome.storage.local`.
 
 File and naming standards

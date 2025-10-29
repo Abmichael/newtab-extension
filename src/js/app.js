@@ -1,4 +1,4 @@
-// newtab - Main Application Entry Point
+// tilio - Main Application Entry Point
 class newtabApp {
   constructor() {
     this.storageManager = new StorageManager();
@@ -128,7 +128,7 @@ class newtabApp {
 
     // Listen for refresh requests from drag and drop operations
     if (folderGrid) {
-      folderGrid.addEventListener("newtab:refresh-needed", (event) => {
+      folderGrid.addEventListener("tilio:refresh-needed", (event) => {
         console.log("Refreshing grid due to:", event.detail?.reason);
         this.refreshGrid();
       });

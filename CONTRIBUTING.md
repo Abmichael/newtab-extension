@@ -1,6 +1,6 @@
-# Contributing to newtab
+# Contributing to tilio
 
-Thank you for your interest in contributing to newtab! We welcome contributions from the community.
+Thank you for your interest in contributing to tilio! We welcome contributions from the community.
 
 ## How to Contribute
 
@@ -22,7 +22,7 @@ Thank you for your interest in contributing to newtab! We welcome contributions 
 
 ## Reporting Bugs
 
-Please report bugs using the [Issues](https://github.com/Abmichael/newtab-extension/issues) page on GitHub. Include steps to reproduce and expected behavior.
+Please report bugs using the [Issues](https://github.com/Abmichael/tilio-extension/issues) page on GitHub. Include steps to reproduce and expected behavior.
 
 ## Questions
 

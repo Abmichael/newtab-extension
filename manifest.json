@@ -1,13 +1,13 @@
 {
   "manifest_version": 3,
-  "name": "new tab",
+  "name": "Tilio",
   "version": "1.2.0",
   "description": "Transform your new tab into an organized workspace with Android-style folders for your favorite sites and bookmarks.",
-  "author": "newtab Team",
-  "homepage_url": "https://github.com/Abmichael/newtab-extension",
+  "author": "Tilio Team",
+  "homepage_url": "https://github.com/Abmichael/tilio-extension",
 
   "chrome_url_overrides": {
-    "newtab": "index.html"
+    "tilio": "index.html"
   },
 
   "permissions": ["storage", "topSites", "favicon"],
@@ -32,7 +32,7 @@
       "48": "icons/icon-48.png",
       "128": "icons/icon-128.png"
     },
-    "default_title": "new tab",
+  "default_title": "Tilio",
     "default_popup": ""
   },
 

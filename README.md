@@ -1,8 +1,8 @@
-# newtab - Android-Style New Tab Extension
+# Tilio - Android-Style New Tab Extension
 
 Transform your Chrome new tab into an organized workspace with beautiful Android-style folders for your favorite sites and bookmarks.
 
-![newtab Preview](icons/preview.png)
+![Tilio Preview](icons/preview.png)
 
 ## 🌟 Features
 
@@ -23,7 +23,7 @@ Transform your Chrome new tab into an organized workspace with beautiful Android
 2. Open Chrome and go to `chrome://extensions/`
 3. Enable "Developer mode" in the top right
 4. Click "Load unpacked" and select the dist folder
-5. Open a new tab to see newtab in action!
+5. Open a new tab to see Tilio in action!
 
 ## 🚀 Quick Start
 
@@ -47,7 +47,7 @@ Transform your Chrome new tab into an organized workspace with beautiful Android
 
 ### Project Structure
 ```
-newtab/
+tilio/
 ├── manifest.json          # Extension manifest
 ├── index.html             # Main new tab page
 ├── background.js          # Service worker
@@ -107,8 +107,8 @@ newtab/
 
 ```bash
 # Clone the repository
-git clone https://github.com/Abmichael/newtab-extension.git
-cd newtab-extension
+git clone https://github.com/Abmichael/tilio-extension.git
+cd tilio-extension
 
 # Load the extension in Chrome
 # 1. Open chrome://extensions/
@@ -200,8 +200,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 🐛 [Report Issues](https://github.com/Abmichael/newtab-extension/issues)
-- 💬 [Discussions](https://github.com/Abmichael/newtab-extension/discussions)
+- 🐛 [Report Issues](https://github.com/Abmichael/tilio-extension/issues)
+- 💬 [Discussions](https://github.com/Abmichael/tilio-extension/discussions)
 - 📧 [Email Support](mailto:abrahammgag@gmail.com)
 
 ## 🗺️ Roadmap

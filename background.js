@@ -1,17 +1,17 @@
 /**
- * Background service worker for newtab extension
+ * Background service worker for Tilio extension
  * Handles extension lifecycle and background tasks including high-res icon fetching
  */
 
-console.log('newtab background service worker starting...');
+console.log('Tilio background service worker starting...');
 
 // Extension installation/update handler
 chrome.runtime.onInstalled.addListener((details) => {
-  console.log('newtab extension installed/updated:', details.reason);
+  console.log('Tilio extension installed/updated:', details.reason);
   if (details.reason === 'install') {
     // Set default settings on first install
     chrome.storage.local.set({
-      'newtab-settings': {
+      'tilio-settings': {
         theme: 'default',
         gridColumns: 'auto',
         showClock: true,
@@ -27,7 +27,7 @@ chrome.runtime.onInstalled.addListener((details) => {
 
 // Handle extension startup
 chrome.runtime.onStartup.addListener(() => {
-  console.log('newtab extension startup');
+  console.log('Tilio extension startup');
 });
 
 // Handle messages from content scripts or popup

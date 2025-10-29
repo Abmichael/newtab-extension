@@ -1,4 +1,4 @@
-# newtab Chrome Extension Development Guidelines
+# Tilio Chrome Extension Development Guidelines
 
 ## Project Overview
 
@@ -22,10 +22,10 @@
 ```json
 {
   "manifest_version": 3,
-  "name": "newtab",
+  "name": "tilio",
   "version": "1.0",
   "chrome_url_overrides": {
-    "newtab": "index.html"
+    "tilio": "index.html"
   },
   "permissions": ["storage"],
   "content_security_policy": {
@@ -35,7 +35,7 @@
 ```
 
 #### Critical Rules
-- **MUST use chrome_url_overrides.newtab** for new tab page replacement
+- **MUST use chrome_url_overrides.tilio** for new tab page replacement
 - **MUST declare storage permission** for chrome.storage.local access
 - **MUST NOT use background scripts** unless absolutely necessary
 - **MUST follow CSP restrictions** - only local resources allowed
@@ -359,12 +359,12 @@ const performAction = async (action, data) => {
 const Logger = {
   debug: (message, data) => {
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[newtab Debug] ${message}`, data);
+      console.log(`[tilio Debug] ${message}`, data);
     }
   },
   
   error: (message, error) => {
-    console.error(`[newtab Error] ${message}`, error);
+    console.error(`[tilio Error] ${message}`, error);
     // Report to error tracking if available
   }
 };

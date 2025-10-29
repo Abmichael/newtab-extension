@@ -1,4 +1,4 @@
-// newtab - Folder System Business Logic (no UI dependencies)
+// tilio - Folder System Business Logic (no UI dependencies)
 // Depends on StorageManager for persistence, validation, and sanitization
 
 class FolderSystem {

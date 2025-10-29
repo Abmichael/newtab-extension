@@ -1,5 +1,5 @@
 /**
- * Global error handling and reporting system for newtab extension
+ * Global error handling and reporting system for tilio extension
  * Provides graceful error recovery and user-friendly error messages
  */
 class ErrorHandler {
@@ -196,7 +196,7 @@ class ErrorHandler {
 
   logInfo(message) {
     if (this.isDevelopment) {
-      console.log("[newtab]", message);
+      console.log("[tilio]", message);
     }
   }
 

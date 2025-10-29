@@ -1,4 +1,4 @@
-// newtab Search Bar Component
+// tilio Search Bar Component
 (()=> {
   function getSettings(){
     try {
@@ -52,7 +52,7 @@
                onerror="this.src='https://www.google.com/s2/favicons?domain=' + new URL('${engine.template.replace('{query}','test')}').hostname + '&sz=32';" />
         </span>
       </div>
-      <input type="text" id="newtab-search-input" placeholder="${engine.name}" aria-label="Search" />
+      <input type="text" id="tilio-search-input" placeholder="${engine.name}" aria-label="Search" />
       <button class="nt-btn search-submit" type="submit" aria-label="Search submit">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         <span>Search</span>
@@ -60,7 +60,7 @@
 
     form.addEventListener('submit', (e)=>{
       e.preventDefault();
-      const q = form.querySelector('#newtab-search-input').value.trim();
+      const q = form.querySelector('#tilio-search-input').value.trim();
       if(!q) return;
       const url = engine.template.replace('{query}', encodeURIComponent(q));
       // Use chrome.tabs if available else fallback

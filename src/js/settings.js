@@ -1,4 +1,4 @@
-// newtab - Settings Management and Customization Features
+// tilio - Settings Management and Customization Features
 class SettingsManager {
   constructor(storageManager) {
     this.storage = storageManager;
@@ -546,7 +546,7 @@ class SettingsManager {
       return false;
     }
 
-    // Check if it's a valid newtab export
+    // Check if it's a valid tilio export
     if (!data.exportDate && !data.folders && !data.settings) {
       return false;
     }

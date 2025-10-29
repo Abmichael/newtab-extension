@@ -1,5 +1,5 @@
 /**
- * Performance monitoring utilities for newtab extension
+ * Performance monitoring utilities for tilio extension
  * Tracks load times, memory usage, and performance metrics
  */
 class PerformanceMonitor {

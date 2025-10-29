@@ -1,4 +1,4 @@
-// newtab - Chrome Storage API Integration Layer
+// tilio - Chrome Storage API Integration Layer
 class StorageManager {
 	constructor() {
 		this.storageKey = "newtab_data";
