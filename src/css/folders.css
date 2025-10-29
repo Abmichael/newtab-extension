@@ -831,6 +831,12 @@ body.theme-light .folder-overlay {
 	text-overflow: ellipsis;
 }
 
+/* Hide tile labels when setting is enabled */
+body.hide-tile-labels .folder-title,
+body.hide-tile-labels .link-title {
+	display: none;
+}
+
 /* Light theme adjustments */
 body.theme-light .link-title {
 	color: var(--color-text-primary);

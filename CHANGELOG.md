@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+  - **Google Font Integration**: Added Inter font family for improved typography
+  - **Hide Tile Labels Setting**: New option in Layout settings to hide text labels below folder and link tiles
   - Move Up/Down (swap with adjacent item)
   - Move to Top/Bottom (jump to first/last position)
   - Smart boundary detection (disabled arrows when at edges)
@@ -28,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
   - Professional Feather Icons style (stroke-based)
   - Inline SVG for offline support (no CDN dependencies)
+  - Font family now uses Inter as primary font with fallbacks
+  - Updated Content Security Policy to allow Google Fonts resources
   - Theme-aware with `currentColor` inheritance
   - 16x16px size with smooth hover transitions
   - See `docs/CONTEXT_MENU_ICONS.md` for icon reference

@@ -15,7 +15,7 @@
   "host_permissions": ["https://*/*", "http://*/*"],
 
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; connect-src 'self' https: http:; style-src 'self' 'unsafe-inline'; img-src 'self' data: chrome: chrome-extension: https: http:;"
+    "extension_pages": "default-src 'self'; connect-src 'self' https: http:; style-src 'self' 'unsafe-inline'; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: chrome: chrome-extension: https: http:;"
   },
 
   "icons": {

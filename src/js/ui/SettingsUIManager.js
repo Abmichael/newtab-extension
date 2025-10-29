@@ -65,6 +65,13 @@ class SettingsUIManager extends ComponentManager {
             
             <div class="settings-section" data-section="layout">
               <div class="setting-group">
+                <label class="setting-checkbox">
+                  <input type="checkbox" id="show-tile-labels">
+                  <span>Show tile labels</span>
+                </label>
+                <div class="setting-description">Display text labels below folder and link tiles</div>
+              </div>
+              <div class="setting-group">
                 <label class="setting-label">Main Grid Columns</label>
                 <div class="setting-description">Number of columns in the main page grid (Auto adjusts based on screen size)</div>
                 <div class="setting-range">
@@ -362,6 +369,7 @@ class SettingsUIManager extends ComponentManager {
     });
 
     // Layout settings
+    modal.querySelector("#show-tile-labels").checked = settings.showTileLabels !== false;
   const mainGridValue = settings.mainGridColumns === 'auto' ? 'auto' : String(settings.mainGridColumns || 'auto');
   modal.querySelector("#main-grid-columns").value = mainGridValue;
   modal.querySelector("#grid-columns").value = settings.gridSize || settings.gridColumns || 5;
@@ -597,6 +605,7 @@ class SettingsUIManager extends ComponentManager {
       }
 
       // Layout settings
+      newSettings.showTileLabels = modal.querySelector("#show-tile-labels").checked;
   const mainGridSelect = modal.querySelector("#main-grid-columns").value;
   newSettings.mainGridColumns = mainGridSelect === 'auto' ? 'auto' : parseInt(mainGridSelect);
   newSettings.gridSize = parseInt(modal.querySelector("#grid-columns").value);
@@ -696,7 +705,7 @@ class SettingsUIManager extends ComponentManager {
           theme: "auto",
           customTheme: false,
           gridSize: 5,
-          tileSize: 120,
+          tileSize: 60,
           showClock: true,
           clockFormat: "12h",
             clockPosition: 'bottom-right',

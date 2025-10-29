@@ -116,8 +116,8 @@ class SettingsManager {
   getDefaultSettings() {
     return {
       gridSize: 3, // Number of columns inside folder popovers
-      mainGridColumns: "auto", // Number of columns in main grid (auto, or 3-10)
-      tileSize: 80, // Default tile size in pixels (for both folders and links)
+      mainGridColumns: 9, // Number of columns in main grid (auto, or 3-10)
+      tileSize: 60, // Default tile size in pixels (for both folders and links)
       theme: "auto",
       backgroundColor: "#1a202c",
       textColor: "#e2e8f0",
@@ -133,6 +133,7 @@ class SettingsManager {
       // these values will be copied into backgroundColor/textColor/primaryColor/backgroundGradient
       // on load to keep compatibility with existing code paths.
       customColors: null,
+      showTileLabels: true, // Show labels below tiles by default
       accessibility: {
         highContrast: false,
         reducedMotion: false,
@@ -351,6 +352,13 @@ class SettingsManager {
       // Apply tile size
       root.style.setProperty("--folder-size", `${this.settings.tileSize}px`);
 
+      // Apply tile labels visibility
+      if (this.settings.showTileLabels === false) {
+        document.body.classList.add("hide-tile-labels");
+      } else {
+        document.body.classList.remove("hide-tile-labels");
+      }
+
       // Apply accessibility settings
       if (this.settings.accessibility?.highContrast) {
         document.body.classList.add("high-contrast");
@@ -417,6 +425,7 @@ class SettingsManager {
           v.yPercent >= 0 &&
           v.yPercent <= 100),
       customTheme: (v) => typeof v === "boolean",
+      showTileLabels: (v) => typeof v === "boolean",
       "accessibility.highContrast": (v) => typeof v === "boolean",
       "accessibility.reducedMotion": (v) => typeof v === "boolean",
       // Simple validation for search engine setting

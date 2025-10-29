@@ -19,7 +19,7 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial,
     sans-serif;
   /* Use gradient; fallback to solid bg color */
   background: var(--background-gradient, var(--bg-color));
@@ -365,7 +365,7 @@ body:not(.theme-light) .search-bar .search-submit:active {
 
   .folder-grid {
     /* Mobile: 2-3 columns depending on width */
-    --gap-size: 16px;
+    --gap-size: 20px;
   }
 }
 
@@ -373,7 +373,7 @@ body:not(.theme-light) .search-bar .search-submit:active {
 @media (min-width: 769px) and (max-width: 1199px) {
   .folder-grid {
     /* Tablet: 4-6 columns based on width */
-    --gap-size: 20px;
+    --gap-size: 26px;
   }
 }
 
@@ -381,7 +381,7 @@ body:not(.theme-light) .search-bar .search-submit:active {
 @media (min-width: 1200px) {
   .folder-grid {
     /* Desktop: 6-8 columns based on width */
-    --gap-size: 24px;
+    --gap-size: 32px;
   }
 }
 
